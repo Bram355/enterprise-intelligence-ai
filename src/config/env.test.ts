@@ -11,6 +11,16 @@ describe('readSupabaseEnv', () => {
     expect(readSupabaseEnv({ VITE_SUPABASE_URL: 'not a url', VITE_SUPABASE_PUBLISHABLE_KEY: 'k' })).toBeNull()
   })
 
+  it('resolves a path against the current origin', () => {
+    expect(
+      readSupabaseEnv({ VITE_SUPABASE_URL: '/supabase', VITE_SUPABASE_PUBLISHABLE_KEY: 'k' }, 'https://app.example.com'),
+    ).toEqual({ url: 'https://app.example.com/supabase', publishableKey: 'k' })
+  })
+
+  it('rejects a path when there is no origin', () => {
+    expect(readSupabaseEnv({ VITE_SUPABASE_URL: '/supabase', VITE_SUPABASE_PUBLISHABLE_KEY: 'k' }, null)).toBeNull()
+  })
+
   it('trims values and strips trailing slashes', () => {
     expect(
       readSupabaseEnv({ VITE_SUPABASE_URL: ' http://127.0.0.1:54321/ ', VITE_SUPABASE_PUBLISHABLE_KEY: ' key ' }),

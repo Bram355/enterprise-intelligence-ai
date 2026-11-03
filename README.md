@@ -23,7 +23,7 @@ Organisation-wide AI knowledge platform: upload internal documents, then ask an 
 npm install
 npm run db:start          # starts local Supabase in Docker (first run downloads images)
 cp .env.example .env.local
-# paste API_URL and PUBLISHABLE_KEY printed by db:start into .env.local
+# paste the PUBLISHABLE_KEY printed by db:start into .env.local
 npm run dev               # http://127.0.0.1:5173
 ```
 
