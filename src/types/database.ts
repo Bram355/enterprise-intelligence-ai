@@ -65,6 +65,36 @@ export type Database = {
           },
         ];
       };
+      categories: {
+        Row: {
+          created_at: string;
+          id: string;
+          name: string;
+          organisation_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          name: string;
+          organisation_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          name?: string;
+          organisation_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "categories_organisation_id_fkey";
+            columns: ["organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "organisations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       departments: {
         Row: {
           created_at: string;
@@ -88,6 +118,239 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "departments_organisation_id_fkey";
+            columns: ["organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "organisations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      document_chunks: {
+        Row: {
+          chunk_index: number;
+          content: string;
+          created_at: string;
+          document_id: string;
+          fts: unknown;
+          id: number;
+          organisation_id: string;
+          page: number | null;
+          version_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          chunk_index: number;
+          content: string;
+          created_at?: string;
+          document_id: string;
+          fts?: never;
+          id?: never;
+          organisation_id: string;
+          page?: number | null;
+          version_id: string;
+        };
+        Update: {
+          chunk_index?: number;
+          content?: string;
+          created_at?: string;
+          document_id?: string;
+          fts?: never;
+          id?: never;
+          organisation_id?: string;
+          page?: number | null;
+          version_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_chunks_document_id_organisation_id_fkey";
+            columns: ["document_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "documents";
+            referencedColumns: ["id", "organisation_id"];
+          },
+          {
+            foreignKeyName: "document_chunks_version_id_organisation_id_fkey";
+            columns: ["version_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "document_versions";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
+      document_departments: {
+        Row: {
+          department_id: string;
+          document_id: string;
+          organisation_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          department_id: string;
+          document_id: string;
+          organisation_id: string;
+        };
+        Update: {
+          department_id?: string;
+          document_id?: string;
+          organisation_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_departments_department_id_organisation_id_fkey";
+            columns: ["department_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "departments";
+            referencedColumns: ["id", "organisation_id"];
+          },
+          {
+            foreignKeyName: "document_departments_document_id_organisation_id_fkey";
+            columns: ["document_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "documents";
+            referencedColumns: ["id", "organisation_id"];
+          },
+        ];
+      };
+      document_versions: {
+        Row: {
+          char_count: number | null;
+          chunk_count: number | null;
+          created_at: string;
+          document_id: string;
+          error: string | null;
+          file_name: string;
+          id: string;
+          mime_type: string;
+          organisation_id: string;
+          processed_at: string | null;
+          sha256: string;
+          size_bytes: number;
+          status: Database["public"]["Enums"]["document_status"];
+          storage_path: string;
+          uploaded_by: string | null;
+          version: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          char_count?: number | null;
+          chunk_count?: number | null;
+          created_at?: string;
+          document_id: string;
+          error?: string | null;
+          file_name: string;
+          id?: string;
+          mime_type: string;
+          organisation_id: string;
+          processed_at?: string | null;
+          sha256: string;
+          size_bytes: number;
+          status?: Database["public"]["Enums"]["document_status"];
+          storage_path: string;
+          uploaded_by?: string | null;
+          version: number;
+        };
+        Update: {
+          char_count?: number | null;
+          chunk_count?: number | null;
+          created_at?: string;
+          document_id?: string;
+          error?: string | null;
+          file_name?: string;
+          id?: string;
+          mime_type?: string;
+          organisation_id?: string;
+          processed_at?: string | null;
+          sha256?: string;
+          size_bytes?: number;
+          status?: Database["public"]["Enums"]["document_status"];
+          storage_path?: string;
+          uploaded_by?: string | null;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_organisation_id_fkey";
+            columns: ["document_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "documents";
+            referencedColumns: ["id", "organisation_id"];
+          },
+          {
+            foreignKeyName: "document_versions_uploaded_by_fkey";
+            columns: ["uploaded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      documents: {
+        Row: {
+          archived_at: string | null;
+          category_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          current_version: number;
+          description: string;
+          id: string;
+          organisation_id: string;
+          processing_error: string | null;
+          status: Database["public"]["Enums"]["document_status"];
+          tags: string[];
+          title: string;
+          updated_at: string;
+          visibility: Database["public"]["Enums"]["document_visibility"];
+        };
+        ComputedFields: never;
+        Insert: {
+          archived_at?: string | null;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          current_version?: number;
+          description?: string;
+          id?: string;
+          organisation_id: string;
+          processing_error?: string | null;
+          status?: Database["public"]["Enums"]["document_status"];
+          tags?: string[];
+          title: string;
+          updated_at?: string;
+          visibility?: Database["public"]["Enums"]["document_visibility"];
+        };
+        Update: {
+          archived_at?: string | null;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          current_version?: number;
+          description?: string;
+          id?: string;
+          organisation_id?: string;
+          processing_error?: string | null;
+          status?: Database["public"]["Enums"]["document_status"];
+          tags?: string[];
+          title?: string;
+          updated_at?: string;
+          visibility?: Database["public"]["Enums"]["document_visibility"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "documents_category_id_organisation_id_fkey";
+            columns: ["category_id", "organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["id", "organisation_id"];
+          },
+          {
+            foreignKeyName: "documents_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "documents_organisation_id_fkey";
             columns: ["organisation_id"];
             isOneToOne: false;
             referencedRelation: "organisations";
@@ -229,10 +492,22 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      search_documents: {
+        Args: { max_results?: number; search_query: string };
+        Returns: {
+          category_name: string;
+          document_id: string;
+          page: number;
+          rank: number;
+          snippet: string;
+          title: string;
+        }[];
+      };
     };
     Enums: {
       app_role: "admin" | "knowledge_manager" | "employee";
+      document_status: "uploaded" | "processing" | "indexed" | "failed";
+      document_visibility: "organisation" | "departments";
       invitation_status: "pending" | "accepted" | "revoked";
     };
     CompositeTypes: {
@@ -353,6 +628,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "knowledge_manager", "employee"],
+      document_status: ["uploaded", "processing", "indexed", "failed"],
+      document_visibility: ["organisation", "departments"],
       invitation_status: ["pending", "accepted", "revoked"],
     },
   },

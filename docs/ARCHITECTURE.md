@@ -39,6 +39,20 @@ Invitation flow: admin submits the form → `invite-member` Edge Function (check
 
 Helper functions live in a non-exposed `private` schema (`current_org_id`, `is_org_admin`) and are used by RLS policies. Department foreign keys include `organisation_id`, so a profile can't point at another organisation's department. Security tests: `supabase/tests/rls.test.sql`.
 
+## Knowledge library (Phase 3)
+
+| Table | Purpose | Who can read | Who can change (from the browser) |
+|---|---|---|---|
+| `categories` | Document categories | Members of the organisation | Admins and Knowledge Managers |
+| `documents` | Title, description, category, tags, visibility, status, archived flag | Permitted members (see below) | Admins and Knowledge Managers, metadata only |
+| `document_departments` | Departments a restricted document is shared with | Permitted members | Admins and Knowledge Managers |
+| `document_versions` | Every uploaded file: path, size, SHA-256, status, error | Permitted members | Nobody (Edge Function only) |
+| `document_chunks` | Extracted passages with page numbers and a full-text index | Permitted members | Nobody (Edge Function only) |
+
+"Permitted" = `private.can_read_document`: Admins and Knowledge Managers see all documents of their organisation; employees see indexed, non-archived documents shared with everyone or with their department. Storage objects in the private `documents` bucket (`<org>/<document>/v<n>-<file>`) use the same rule.
+
+Upload flow: form → `upload-document` Edge Function (role check, file validation, rate limit) → private storage → text extraction → chunking → passages saved → status `indexed` or `failed` + audit entry. Security tests: `supabase/tests/documents.test.sql`; processing unit tests live next to the function.
+
 ## Frontend layout
 
 ```
@@ -55,6 +69,10 @@ src/
 supabase/
   config.toml     local Supabase configuration
   migrations/     database schema and security policies (from Phase 2)
+  functions/      Edge Functions: invite-member, upload-document
+  tests/          pgTAP database security tests
+samples/          synthetic documents for local testing
+scripts/          sample generation and seeding
 docs/             brief, decisions, architecture
 ```
 
