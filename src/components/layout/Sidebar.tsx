@@ -1,6 +1,8 @@
 import { Sparkles, X } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '../../config/navigation'
+import { useAuth } from '../../features/auth/auth-context'
+import { can } from '../../lib/permissions'
 
 interface SidebarProps {
   open: boolean
@@ -8,6 +10,8 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
+  const { profile } = useAuth()
+  const items = NAV_ITEMS.filter((item) => !item.permission || can(profile?.role, item.permission))
   return (
     <>
       <div
@@ -42,7 +46,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </button>
         </div>
         <nav aria-label="Main" className="flex-1 space-y-1 px-3 py-4">
-          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          {items.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}
@@ -60,6 +64,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           ))}
         </nav>
         <div className="border-t border-slate-800 px-5 py-4 text-xs text-slate-500">
+          {profile?.organisationName && <div className="mb-1 truncate text-slate-300">{profile.organisationName}</div>}
           Development build · synthetic data only
         </div>
       </aside>

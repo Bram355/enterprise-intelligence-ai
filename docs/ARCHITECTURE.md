@@ -25,6 +25,20 @@ Supabase
 - **Uploaded content is data, not instructions.** Document text is passed to the AI as quoted context with a fixed system prompt; it can never change the assistant's rules.
 - **Provider independence.** AI and embedding calls go through one adapter interface so the provider can be swapped.
 
+## Identity and access (Phase 2)
+
+| Table | Purpose | Who can read | Who can change (from the browser) |
+|---|---|---|---|
+| `organisations` | Tenant | Members of that organisation | Nobody |
+| `departments` | Teams inside an organisation | Members of that organisation | Organisation admins |
+| `profiles` | One per user: organisation, role, department, active flag | Members of the same organisation | The user, own `full_name` only |
+| `invitations` | Pending/accepted invites | Organisation admins | Nobody (Edge Function only) |
+| `audit_log` | Security-relevant events | Organisation admins | Nobody (triggers/Edge Function only) |
+
+Invitation flow: admin submits the form → `invite-member` Edge Function (checks admin, validates, rate-limits, writes invitation + audit entry) → Supabase Auth sends the email → database trigger creates the profile from the invitation → user sets a password on `/accept-invite` → invitation marked accepted.
+
+Helper functions live in a non-exposed `private` schema (`current_org_id`, `is_org_admin`) and are used by RLS policies. Department foreign keys include `organisation_id`, so a profile can't point at another organisation's department. Security tests: `supabase/tests/rls.test.sql`.
+
 ## Frontend layout
 
 ```
