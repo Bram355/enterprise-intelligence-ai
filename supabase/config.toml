@@ -426,3 +426,9 @@ verify_jwt = true
 
 [functions.upload-document]
 verify_jwt = true
+
+[functions.ask-question]
+verify_jwt = true
+
+[functions.reindex-embeddings]
+verify_jwt = true

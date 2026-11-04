@@ -53,6 +53,20 @@ Helper functions live in a non-exposed `private` schema (`current_org_id`, `is_o
 
 Upload flow: form → `upload-document` Edge Function (role check, file validation, rate limit) → private storage → text extraction → chunking → passages saved → status `indexed` or `failed` + audit entry. Security tests: `supabase/tests/documents.test.sql`; processing unit tests live next to the function.
 
+## AI retrieval (Phase 4)
+
+```
+Question (AI Assistant page)
+  → ask-question Edge Function: checks user, validates, rate-limits (60/hour)
+  → embed question (provider adapter: mock | openai)
+  → match_chunks RPC as the user (RLS): meaning + keyword search, top 6 permitted passages
+  → none relevant? reply "couldn't find this" without calling the AI
+  → fixed system prompt + fenced sources + question → provider.generate
+  → keep only valid [n] citations → log in ai_queries → answer + sources
+```
+
+Uploads embed each passage (title + text) via the same adapter; if the AI service fails the document stays keyword-searchable and `reindex-embeddings` fills the gaps later. Tests: `supabase/tests/retrieval.test.sql`, unit tests in `supabase/functions/_shared/ai/`, and `npm run eval:questions` against the running stack.
+
 ## Frontend layout
 
 ```
@@ -69,7 +83,7 @@ src/
 supabase/
   config.toml     local Supabase configuration
   migrations/     database schema and security policies (from Phase 2)
-  functions/      Edge Functions: invite-member, upload-document
+  functions/      Edge Functions: invite-member, upload-document, ask-question, reindex-embeddings; _shared/ai provider adapter
   tests/          pgTAP database security tests
 samples/          synthetic documents for local testing
 scripts/          sample generation and seeding
@@ -81,7 +95,7 @@ docs/             brief, decisions, architecture
 | Service | Needed? | Purpose | Status |
 |---|---|---|---|
 | Supabase | Essential | Database, auth, storage, vector search, server functions | Local only (no account yet) |
-| AI provider (e.g. OpenAI, Google Gemini, Anthropic) | Essential for the assistant | Answers and embeddings | Not connected; mock adapter until approved |
+| AI provider (OpenAI recommended; Gemini, Anthropic compared) | Essential for the assistant | Answers and embeddings | Not connected; mock adapter in use, OpenAI adapter ready |
 | Email provider (e.g. Resend) | Optional | Reliable auth emails in production (Supabase's built-in email is rate-limited) | Not connected |
 | Error monitoring (e.g. Sentry) | Optional | Production error tracking | Not connected |
 | Hosting (e.g. Vercel, Netlify, Cloudflare Pages) | Needed at deploy time | Serve the frontend | Not connected |

@@ -44,8 +44,8 @@ describe('app routes (signed in)', () => {
   })
 
   it('labels unbuilt features honestly', async () => {
-    renderAt('/assistant')
-    expect(await screen.findByText('Planned for Phase 5')).toBeInTheDocument()
+    renderAt('/support')
+    expect(await screen.findByText('Planned for Phase 6')).toBeInTheDocument()
   })
 
   it('shows the signed-in user and role', async () => {

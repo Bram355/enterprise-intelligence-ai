@@ -10,8 +10,9 @@ Organisation-wide AI knowledge platform: upload internal documents, then ask an 
 |---|---|---|
 | 1 | Project foundation, app shell, local backend | Done |
 | 2 | Database schema, invite-only auth, roles, security policies | Done |
-| 3 | Knowledge library: upload, processing, versions, archiving, keyword search, document permissions | In review |
-| 4–9 | AI retrieval, assistant, support module, admin, QA, deployment prep | Planned |
+| 3 | Knowledge library: upload, processing, versions, archiving, keyword search, document permissions | Done |
+| 4 | AI retrieval: embeddings (pgvector), permission-aware hybrid search, provider adapter (mock until approved), answers with citations | In review |
+| 5–9 | AI assistant, assistant, support module, admin, QA, deployment prep | Planned |
 
 ## Prerequisites
 
@@ -42,7 +43,7 @@ All use the password `Password123!`. They exist only in the local database and m
 | finance@northwind.test | Northwind Payments | Employee (Finance) |
 | admin@contoso.test | Contoso Retail | Organisation Admin (second organisation, for isolation tests) |
 
-Accounts are invite-only: sign in as an admin, open **Administration**, and invite someone. Locally the invitation email lands in Mailpit (link below). The link opens the app's "set up your account" page. Run `npx supabase functions serve` in a second terminal so the `invite-member` and `upload-document` functions are available.
+Accounts are invite-only: sign in as an admin, open **Administration**, and invite someone. Locally the invitation email lands in Mailpit (link below). The link opens the app's "set up your account" page. Run `npx supabase functions serve` in a second terminal so the Edge Functions (`invite-member`, `upload-document`, `ask-question`, `reindex-embeddings`) are available.
 
 ### Knowledge Library (local only)
 
@@ -55,6 +56,18 @@ npm run seed:documents
 ```
 
 `samples/` is regenerated with `python3 scripts/make_samples.py` (needs `fpdf2` and `python-docx`). All sample content is fictional.
+
+### AI retrieval (local only)
+
+No AI provider is connected. By default the Edge Functions use a free **mock provider** (`AI_PROVIDER` unset): hashed word embeddings and extractive answers that quote the best-matching passages with citations. The **AI Assistant** page calls the `ask-question` function, which searches only passages the signed-in user may read (RLS) and logs every question in `ai_queries`.
+
+Check the sample questions (right documents cited, restricted ones never leaked) after seeding:
+
+```bash
+npm run eval:questions
+```
+
+To use OpenAI later (only after approval), set server-side secrets — never in `.env.local` or the browser: `AI_PROVIDER=openai`, `OPENAI_API_KEY`, optionally `AI_CHAT_MODEL`, `AI_EMBEDDING_MODEL`, `AI_MIN_SIMILARITY`. Then call the `reindex-embeddings` function (admin or knowledge manager) until `remaining` is 0, so existing passages get the new provider's embeddings.
 
 On Windows (PowerShell) use `Copy-Item .env.example .env.local` instead of `cp`.
 
@@ -71,6 +84,7 @@ On Windows (PowerShell) use `Copy-Item .env.example .env.local` instead of `cp`.
 | `npm run check` | Lint + typecheck + tests |
 | `npm run test:db` | Database security tests (pgTAP, needs local Supabase running) |
 | `npm run seed:documents` | Upload the synthetic sample documents through the real upload function (local only) |
+| `npm run eval:questions` | Ask sample questions as different demo users and check citations and permissions (local only) |
 | `npm run db:types` | Regenerate `src/types/database.ts` from the local database |
 | `npm run db:start` / `db:stop` / `db:status` / `db:reset` | Manage the local Supabase stack |
 

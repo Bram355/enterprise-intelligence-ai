@@ -67,3 +67,22 @@ Short record of important technical decisions, newest last. Each entry explains 
 **Decision:** Phase 3 uses Postgres full-text search (`search_documents`, run with the caller's permissions). Search by meaning (embeddings with pgvector) comes in Phase 4 once an AI provider is approved.
 
 **Why:** Works locally at no cost, and gives a baseline to compare semantic search against.
+
+## D12 — AI provider: OpenAI recommended, mock until approved
+
+**Decision:** All AI calls go through one interface (`supabase/functions/_shared/ai/`). A free, offline mock provider is the default. An OpenAI adapter (`text-embedding-3-small` at 1024 dimensions + a low-cost chat model) is ready but is only used when `AI_PROVIDER=openai` and a key is set as a server-side secret.
+
+**Why:** Compared in Phase 4 (prices from official pages, Nov 2026): OpenAI was cheapest per question, offers embeddings and chat on one account, doesn't train on API data by default and offers a GDPR DPA. Gemini's paid tier is similar; its free tier may use content to improve products, so it's unsuitable for company documents. Anthropic has no embedding model, so it would need a second provider. Adding another provider means one adapter file.
+
+## D13 — Permission-aware hybrid retrieval
+
+**Decision:** `match_chunks` combines meaning search (pgvector cosine similarity, HNSW index) with keyword search (any question word, ranked) using reciprocal rank fusion. It runs as the signed-in user (`security invoker`), so the same RLS rules as the library decide which passages are eligible; archived, failed and processing documents are excluded for everyone. The `ask-question` function calls it with the user's own token, not the service role. If nothing relevant is found, the AI isn't called and the assistant says it couldn't find the answer.
+
+**Why:** Restricted text can't leak into an answer if it is never retrieved. Hybrid search catches exact terms (error codes, product names) that pure meaning search misses. Embeddings use 1024 dimensions, which OpenAI, Gemini and Voyage all support, so switching provider needs only a re-embed (`reindex-embeddings`), not a schema change.
+
+## D14 — Prompt-injection defences and logging
+
+**Decision:** Rules live only in a fixed system prompt. Document passages and the question are wrapped in `<source>` / `<question>` tags that document text can't close or forge; the prompt says text inside sources is data, never instructions. Citations to sources that weren't provided are removed. Every question is logged in `ai_queries` (answer, passages used, model, tokens, latency); members see their own, admins their organisation's. Members are limited to 60 questions per hour.
+
+**Why:** Uploaded documents are untrusted. Logging supports auditing, cost tracking and the analytics planned for Phase 7.
+
