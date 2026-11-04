@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { getProvider } from '../_shared/ai/index.ts'
 import { corsHeaders, json } from '../_shared/cors.ts'
 import { chunkSegments } from './chunk.ts'
 import { extractSegments } from './extract.ts'
@@ -8,6 +9,7 @@ import { parseMetadata } from './metadata.ts'
 const MAX_UPLOADS_PER_HOUR = 30
 const MAX_TEXT_CHARS = 2_000_000
 const CHUNK_INSERT_BATCH = 500
+const EMBED_BATCH = 64
 
 async function sha256(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', bytes)
@@ -19,7 +21,7 @@ async function processVersion(
   ctx: { organisationId: string; documentId: string; versionId: string; version: number; isNew: boolean },
   kind: Parameters<typeof extractSegments>[0],
   bytes: Uint8Array,
-): Promise<{ ok: true; chunkCount: number } | { ok: false; error: string }> {
+): Promise<{ ok: true; chunkCount: number; embedded: boolean } | { ok: false; error: string }> {
   try {
     const segments = await extractSegments(kind, bytes)
     const charCount = segments.reduce((n, s) => n + s.text.length, 0)
@@ -29,14 +31,40 @@ async function processVersion(
       throw new Error('No readable text was found. Scanned documents need text recognition (OCR), which is not supported yet.')
     }
 
+    // Embeddings power search by meaning. If the AI service fails, the document is
+    // still indexed for keyword search and can be re-embedded later.
+    let embeddings: (number[] | null)[] = chunks.map(() => null)
+    let embeddingModel: string | null = null
+    try {
+      const provider = getProvider()
+      const { data: doc } = await admin.from('documents').select('title').eq('id', ctx.documentId).single()
+      const vectors: number[][] = []
+      for (let i = 0; i < chunks.length; i += EMBED_BATCH) {
+        const batch = chunks.slice(i, i + EMBED_BATCH).map((c) => `${doc?.title ?? ''}\n\n${c.content}`)
+        vectors.push(...(await provider.embed(batch, 'document')))
+      }
+      embeddings = vectors
+      embeddingModel = provider.embeddingModel
+    } catch (err) {
+      await admin.from('audit_log').insert({
+        organisation_id: ctx.organisationId,
+        action: 'document.embedding_failed',
+        target_type: 'document',
+        target_id: ctx.documentId,
+        details: { version: ctx.version, error: err instanceof Error ? err.message : 'unknown error' },
+      })
+    }
+
     for (let i = 0; i < chunks.length; i += CHUNK_INSERT_BATCH) {
-      const rows = chunks.slice(i, i + CHUNK_INSERT_BATCH).map((c) => ({
+      const rows = chunks.slice(i, i + CHUNK_INSERT_BATCH).map((c, j) => ({
         organisation_id: ctx.organisationId,
         document_id: ctx.documentId,
         version_id: ctx.versionId,
         chunk_index: c.index,
         page: c.page,
         content: c.content,
+        embedding: embeddings[i + j] ? JSON.stringify(embeddings[i + j]) : null,
+        embedding_model: embeddings[i + j] ? embeddingModel : null,
       }))
       const { error } = await admin.from('document_chunks').insert(rows)
       if (error) throw new Error('Could not save the extracted text.')
@@ -51,7 +79,7 @@ async function processVersion(
       .from('documents')
       .update({ status: 'indexed', current_version: ctx.version, processing_error: null })
       .eq('id', ctx.documentId)
-    return { ok: true, chunkCount: chunks.length }
+    return { ok: true, chunkCount: chunks.length, embedded: embeddingModel !== null }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Processing failed.'
     await admin.from('document_chunks').delete().eq('version_id', ctx.versionId)
@@ -250,6 +278,7 @@ Deno.serve(async (req) => {
     version,
     status: result.ok ? 'indexed' : 'failed',
     chunkCount: result.ok ? result.chunkCount : 0,
+    searchByMeaning: result.ok ? result.embedded : false,
     error: result.ok ? null : result.error,
   })
 })

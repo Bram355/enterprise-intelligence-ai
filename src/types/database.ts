@@ -23,6 +23,76 @@ export type Database = {
   };
   public: {
     Tables: {
+      ai_queries: {
+        Row: {
+          answer: string | null;
+          chunk_ids: number[];
+          citations: NonNullable<Json>;
+          created_at: string;
+          error: string | null;
+          id: string;
+          input_tokens: number | null;
+          latency_ms: number | null;
+          model: string;
+          organisation_id: string;
+          output_tokens: number | null;
+          provider: string;
+          question: string;
+          status: Database["public"]["Enums"]["ai_query_status"];
+          user_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          answer?: string | null;
+          chunk_ids?: number[];
+          citations?: NonNullable<Json>;
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          input_tokens?: number | null;
+          latency_ms?: number | null;
+          model: string;
+          organisation_id: string;
+          output_tokens?: number | null;
+          provider: string;
+          question: string;
+          status: Database["public"]["Enums"]["ai_query_status"];
+          user_id?: string | null;
+        };
+        Update: {
+          answer?: string | null;
+          chunk_ids?: number[];
+          citations?: NonNullable<Json>;
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          input_tokens?: number | null;
+          latency_ms?: number | null;
+          model?: string;
+          organisation_id?: string;
+          output_tokens?: number | null;
+          provider?: string;
+          question?: string;
+          status?: Database["public"]["Enums"]["ai_query_status"];
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_queries_organisation_id_fkey";
+            columns: ["organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "organisations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "ai_queries_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       audit_log: {
         Row: {
           action: string;
@@ -131,6 +201,8 @@ export type Database = {
           content: string;
           created_at: string;
           document_id: string;
+          embedding: string | null;
+          embedding_model: string | null;
           fts: unknown;
           id: number;
           organisation_id: string;
@@ -143,6 +215,8 @@ export type Database = {
           content: string;
           created_at?: string;
           document_id: string;
+          embedding?: string | null;
+          embedding_model?: string | null;
           fts?: never;
           id?: never;
           organisation_id: string;
@@ -154,6 +228,8 @@ export type Database = {
           content?: string;
           created_at?: string;
           document_id?: string;
+          embedding?: string | null;
+          embedding_model?: string | null;
           fts?: never;
           id?: never;
           organisation_id?: string;
@@ -492,6 +568,26 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      match_chunks: {
+        Args: {
+          match_count?: number;
+          min_similarity?: number;
+          query_embedding: string;
+          query_text: string;
+        };
+        Returns: {
+          category_name: string;
+          chunk_id: number;
+          content: string;
+          document_id: string;
+          keyword_rank: number;
+          page: number;
+          score: number;
+          similarity: number;
+          title: string;
+          version: number;
+        }[];
+      };
       search_documents: {
         Args: { max_results?: number; search_query: string };
         Returns: {
@@ -505,6 +601,7 @@ export type Database = {
       };
     };
     Enums: {
+      ai_query_status: "answered" | "no_answer" | "failed";
       app_role: "admin" | "knowledge_manager" | "employee";
       document_status: "uploaded" | "processing" | "indexed" | "failed";
       document_visibility: "organisation" | "departments";
@@ -627,6 +724,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      ai_query_status: ["answered", "no_answer", "failed"],
       app_role: ["admin", "knowledge_manager", "employee"],
       document_status: ["uploaded", "processing", "indexed", "failed"],
       document_visibility: ["organisation", "departments"],
