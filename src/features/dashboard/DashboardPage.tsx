@@ -4,8 +4,8 @@ import { PlannedFeature } from '../../components/ui/PlannedFeature'
 import { SystemStatusCard } from './SystemStatusCard'
 
 const ROADMAP = [
-  { phase: 1, name: 'Project foundation', state: 'In progress' },
-  { phase: 2, name: 'Supabase architecture, auth and roles', state: 'Next' },
+  { phase: 1, name: 'Project foundation', state: 'Done' },
+  { phase: 2, name: 'Supabase architecture, auth and roles', state: 'In review' },
   { phase: 3, name: 'Knowledge library and document processing', state: 'Planned' },
   { phase: 4, name: 'AI provider and permission-aware retrieval', state: 'Planned' },
   { phase: 5, name: 'AI assistant with citations and feedback', state: 'Planned' },

@@ -33,3 +33,19 @@ Short record of important technical decisions, newest last. Each entry explains 
 **Decision:** Features that are not built yet show a clear "Planned for Phase N" label. Dashboard metrics are not shown until they come from real data; any seed data added later will be visibly labelled as sample data.
 
 **Why:** The brief forbids presenting fake functionality as complete.
+
+## D6 — Invite-only accounts
+
+**Decision:** Public sign-up is disabled (`enable_signup = false`). An Organisation Admin invites a person by email and chooses their role and department; the person sets a password from the invitation link. A database trigger on `auth.users` also refuses any account without a pending, unexpired invitation, so sign-up stays closed even if the Auth setting is changed by mistake.
+
+**Why:** This is an internal business tool. Invite-only means nobody can join an organisation or choose their own role.
+
+## D7 — Where permissions are enforced
+
+**Decision:** Every table has Row Level Security. Users only see rows from their own organisation, and deactivated users see nothing. Users may change only their own `full_name` (column-level grant); role, department, organisation and active status can't be changed from the browser. Creating invitations goes through the `invite-member` Edge Function, which checks the caller is an active admin, validates input, limits each admin to 20 invitations per hour and writes an audit log entry. The browser's role checks only hide buttons; they are not security.
+
+**Why:** UI checks can be bypassed by calling the API directly; database rules can't.
+
+## D8 — Audit log
+
+**Decision:** Key identity events (`member.joined`, `profile.updated`, `department.created/updated/deleted`, `invitation.created`) are written to `audit_log` by triggers or the Edge Function. Only admins of the same organisation can read it, and nobody can edit it from the browser.
