@@ -7,7 +7,9 @@ import { RequireAuth, RequirePermission } from '../features/auth/guards'
 import { LoginPage } from '../features/auth/LoginPage'
 import { SetPasswordPage } from '../features/auth/SetPasswordPage'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
+import { DocumentDetailPage } from '../features/library/DocumentDetailPage'
 import { LibraryPage } from '../features/library/LibraryPage'
+import { UploadDocumentPage } from '../features/library/UploadDocumentPage'
 import { NotFoundPage } from '../features/NotFoundPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { SupportPage } from '../features/support/SupportPage'
@@ -28,6 +30,15 @@ export const routes: RouteObject[] = [
       { index: true, element: <DashboardPage /> },
       { path: 'assistant', element: <AssistantPage /> },
       { path: 'library', element: <LibraryPage /> },
+      {
+        path: 'library/upload',
+        element: (
+          <RequirePermission permission="documents.manage">
+            <UploadDocumentPage />
+          </RequirePermission>
+        ),
+      },
+      { path: 'library/:id', element: <DocumentDetailPage /> },
       { path: 'support', element: <SupportPage /> },
       {
         path: 'admin',

@@ -48,3 +48,11 @@ select gen_random_uuid(), u.id, u.id::text,
   'email', now(), now(), now()
 from auth.users u
 where u.email like '%.test';
+
+-- Knowledge categories (Phase 3). Sample documents are uploaded by `npm run seed:documents`,
+-- which goes through the real upload-document function.
+insert into public.categories (id, organisation_id, name) values
+  ('00000000-0000-4000-d000-000000000001', '00000000-0000-4000-a000-000000000001', 'Technical documentation'),
+  ('00000000-0000-4000-d000-000000000002', '00000000-0000-4000-a000-000000000001', 'Policies'),
+  ('00000000-0000-4000-d000-000000000003', '00000000-0000-4000-a000-000000000001', 'Onboarding'),
+  ('00000000-0000-4000-d000-000000000004', '00000000-0000-4000-a000-000000000002', 'Store operations');

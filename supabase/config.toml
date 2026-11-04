@@ -423,3 +423,6 @@ enabled = true
 
 [functions.invite-member]
 verify_jwt = true
+
+[functions.upload-document]
+verify_jwt = true
