@@ -50,11 +50,11 @@ export function AdminPage() {
           <Alert tone="error">{error}</Alert>
         </div>
       )}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card title="Invite a member" className="self-start">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card title="Invite a member" className="min-w-0 self-start">
           <InviteMemberForm departments={departments} onInvited={() => setVersion((v) => v + 1)} />
         </Card>
-        <div className="space-y-6 lg:col-span-2">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           <Card title={`Members${loading ? '' : ` (${members.length})`}`}>
             {loading ? (
               <p className="text-sm text-slate-500">Loading…</p>

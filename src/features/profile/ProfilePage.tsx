@@ -63,7 +63,7 @@ export function ProfilePage() {
   return (
     <>
       <PageHeader title="Your profile" description="Your account details and sign-in settings." />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card title="Account">
           <dl className="grid grid-cols-3 gap-y-2 text-sm">
             <dt className="text-slate-500">Email</dt>
