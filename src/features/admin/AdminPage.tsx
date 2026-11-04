@@ -42,6 +42,8 @@ export function AdminPage() {
     }
   }, [version])
 
+  const pendingEmails = new Set(invitations.filter((i) => i.status === 'pending').map((i) => i.email))
+
   return (
     <>
       <PageHeader title="Administration" description="Invite people and review who has access to your organisation." />
@@ -79,7 +81,13 @@ export function AdminPage() {
                         <td className="whitespace-nowrap px-5 py-2 text-slate-700">{ROLE_LABELS[m.role]}</td>
                         <td className="whitespace-nowrap px-5 py-2 text-slate-700">{m.departmentName ?? '—'}</td>
                         <td className="px-5 py-2">
-                          <Badge tone={m.isActive ? 'success' : 'neutral'}>{m.isActive ? 'Active' : 'Deactivated'}</Badge>
+                          {!m.isActive ? (
+                            <Badge tone="neutral">Deactivated</Badge>
+                          ) : pendingEmails.has(m.email) ? (
+                            <Badge tone="warning">Invited</Badge>
+                          ) : (
+                            <Badge tone="success">Active</Badge>
+                          )}
                         </td>
                       </tr>
                     ))}

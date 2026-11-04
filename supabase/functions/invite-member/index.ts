@@ -50,6 +50,19 @@ Deno.serve(async (req) => {
     if (!dept) return json(400, { error: 'Choose a valid department' })
   }
 
+  // Invited people get a profile as soon as the invitation is sent, so check pending invitations first.
+  const { data: pending } = await admin
+    .from('invitations')
+    .select('id, expires_at')
+    .eq('email', input.email)
+    .eq('status', 'pending')
+    .maybeSingle()
+  if (pending) {
+    return new Date(pending.expires_at) > new Date()
+      ? json(409, { error: 'An invitation for this email is already pending' })
+      : json(409, { error: 'The earlier invitation for this email has expired. Resending invitations is planned for Phase 7.' })
+  }
+
   const { data: existingMember } = await admin.from('profiles').select('id').eq('email', input.email).maybeSingle()
   if (existingMember) return json(409, { error: 'This person already has an account' })
 
@@ -63,18 +76,6 @@ Deno.serve(async (req) => {
     return json(429, { error: `Invitation limit reached (${MAX_INVITES_PER_HOUR} per hour). Try again later.` })
   }
 
-  const { data: pending } = await admin
-    .from('invitations')
-    .select('id, expires_at')
-    .eq('email', input.email)
-    .eq('status', 'pending')
-    .maybeSingle()
-  if (pending) {
-    if (new Date(pending.expires_at) > new Date()) {
-      return json(409, { error: 'An invitation for this email is already pending' })
-    }
-    await admin.from('invitations').update({ status: 'revoked' }).eq('id', pending.id)
-  }
 
   const { data: invitation, error: insertError } = await admin
     .from('invitations')
