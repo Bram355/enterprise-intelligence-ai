@@ -38,6 +38,13 @@ describe('mock answers', () => {
     expect(answer).not.toContain('[2]')
   })
 
+  it('skip headings and quote the matching steps instead', () => {
+    const doc = '# Store Opening Procedure (SAMPLE)\n\n## Morning steps\n1. Open the store shutters at 07:45 and disable the alarm.\n2. Count the till float before opening.'
+    const answer = mockAnswer(buildMessages('What are the steps to open a store in the morning?', [source(1, doc)]))
+    expect(answer).not.toContain('#')
+    expect(answer).toContain('Open the store shutters at 07:45 and disable the alarm. [1]')
+  })
+
   it('say so when nothing matches', () => {
     expect(mockAnswer(buildMessages('Office parking rules?', [source(1, 'Refunds take five working days to process.')]))).toBe(NO_ANSWER)
   })

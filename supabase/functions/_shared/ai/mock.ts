@@ -53,19 +53,36 @@ export function mockAnswer(messages: ChatMessage[]): string {
   // Loose match so "fail" finds "failure" and "nightly" finds "night".
   const matches = (word: string, want: string) =>
     word === want || (Math.min(word.length, want.length) >= 4 && (word.startsWith(want) || want.startsWith(word)))
-  const scored = sources.flatMap((source) =>
+  const score = (text: string) => {
+    const words = tokenize(text)
+    return wanted.filter((w) => words.some((t) => matches(t, w))).length
+  }
+  // Require two matching words for multi-word questions, so a single shared word isn't treated as an answer.
+  const minScore = wanted.length > 1 ? 2 : 1
+  const scored: { n: number; index: number; sentence: string; score: number }[] = []
+  for (const source of sources) {
+    // Text under a heading that matches the question is relevant even if it doesn't repeat its words.
+    let headingScore = 0
     source.text
       .split(/(?<=[.!?])\s+|\n+/)
       .map((s) => s.trim())
-      .filter((s) => s.length > 20)
-      .map((sentence) => {
-        const words = tokenize(sentence)
-        return { n: source.n, sentence, score: wanted.filter((w) => words.some((t) => matches(t, w))).length }
-      }),
-  )
-  // Require two matching words for multi-word questions, so a single shared word isn't treated as an answer.
-  const minScore = wanted.length > 1 ? 2 : 1
-  const best = scored.filter((s) => s.score >= minScore).sort((a, b) => b.score - a.score || a.n - b.n).slice(0, 3)
+      .forEach((line, index) => {
+        if (/^#{1,6}\s/.test(line)) {
+          headingScore = score(line)
+          return
+        }
+        const sentence = line.replace(/^([-*•]|\d+[.)])\s+/, '')
+        if (sentence.length <= 20) return
+        const own = score(sentence)
+        const inherited = headingScore >= minScore ? minScore : 0
+        scored.push({ n: source.n, index, sentence, score: Math.max(own, inherited) })
+      })
+  }
+  const best = scored
+    .filter((s) => s.score >= minScore)
+    .sort((a, b) => b.score - a.score || a.n - b.n || a.index - b.index)
+    .slice(0, 3)
+    .sort((a, b) => a.n - b.n || a.index - b.index)
   if (best.length === 0) return NO_ANSWER
   return best.map((b) => `${b.sentence} [${b.n}]`).join('\n\n')
 }
