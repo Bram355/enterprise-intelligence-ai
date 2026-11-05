@@ -1,4 +1,5 @@
 import { createMockProvider } from './mock.ts'
+import { createOllamaProvider } from './ollama.ts'
 import { createOpenAiProvider } from './openai.ts'
 import { AiProviderError, type AiProvider } from './types.ts'
 
@@ -24,6 +25,13 @@ export function getProvider(env: EnvReader = (name) => Deno.env.get(name)): AiPr
         minSimilarity: Number.isFinite(minSimilarity) ? minSimilarity : undefined,
       })
     }
+    case 'ollama':
+      return createOllamaProvider({
+        baseUrl: env('OLLAMA_URL') ?? 'http://host.docker.internal:11434',
+        chatModel: env('AI_CHAT_MODEL') ?? 'qwen2.5:3b',
+        embeddingModel: env('AI_EMBEDDING_MODEL') ?? 'mxbai-embed-large',
+        minSimilarity: Number.isFinite(minSimilarity) ? minSimilarity : undefined,
+      })
     default:
       throw new AiProviderError(`Unknown AI provider "${provider}".`)
   }

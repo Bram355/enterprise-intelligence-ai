@@ -112,7 +112,10 @@ Deno.serve(async (req) => {
       ;({ answer, cited } = parseCitations(generation.text, sources))
     }
     const status = isNoAnswer(answer) ? 'no_answer' : 'answered'
-    if (status === 'no_answer') cited = []
+    if (status === 'no_answer') {
+      cited = []
+      answer = NO_ANSWER
+    }
 
     const citations = cited.map((s) => ({
       n: s.n,

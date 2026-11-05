@@ -48,6 +48,13 @@ describe('parseCitations', () => {
 })
 
 describe('isNoAnswer', () => {
+  it('turns echoed source markup and "(Source n)" into citation markers', () => {
+    const sources = [source(1), source(2)]
+    const { answer, cited } = parseCitations('Use sandbox keys with <source id="1" page="2">the sandbox host</source>. Retry later (Source 2).', sources)
+    expect(answer).toBe('Use sandbox keys with the sandbox host [1]. Retry later [2].')
+    expect(cited.map((s) => s.n)).toEqual([1, 2])
+  })
+
   it('recognises the no-answer reply', () => {
     expect(isNoAnswer(NO_ANSWER)).toBe(true)
     expect(isNoAnswer(`  ${NO_ANSWER} Try asking your manager.`)).toBe(true)
