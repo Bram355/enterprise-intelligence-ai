@@ -15,7 +15,7 @@ Supabase
    └─ Edge Functions  — document processing, AI calls, rate limiting (secrets stay server-side)
            │
            ▼
-      AI provider (Phase 4, needs approval) — behind a provider-independent adapter
+      AI provider (mock | Ollama self-hosted | OpenAI) — behind a provider-independent adapter
 ```
 
 ## Principles
@@ -95,7 +95,7 @@ docs/             brief, decisions, architecture
 | Service | Needed? | Purpose | Status |
 |---|---|---|---|
 | Supabase | Essential | Database, auth, storage, vector search, server functions | Local only (no account yet) |
-| AI provider (OpenAI recommended; Gemini, Anthropic compared) | Essential for the assistant | Answers and embeddings | Not connected; mock adapter in use, OpenAI adapter ready |
+| AI provider: Ollama (free, self-hosted) or OpenAI (paid) | Essential for the assistant | Answers and embeddings | Ollama in local development; mock default; OpenAI adapter ready (needs credit) |
 | Email provider (e.g. Resend) | Optional | Reliable auth emails in production (Supabase's built-in email is rate-limited) | Not connected |
 | Error monitoring (e.g. Sentry) | Optional | Production error tracking | Not connected |
 | Hosting (e.g. Vercel, Netlify, Cloudflare Pages) | Needed at deploy time | Serve the frontend | Not connected |

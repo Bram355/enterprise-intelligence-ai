@@ -86,3 +86,9 @@ Short record of important technical decisions, newest last. Each entry explains 
 
 **Why:** Uploaded documents are untrusted. Logging supports auditing, cost tracking and the analytics planned for Phase 7.
 
+## D15 — Ollama as the free, self-hosted provider
+
+**Decision:** Add an Ollama adapter (`AI_PROVIDER=ollama`) using `mxbai-embed-large` (native 1024-dimension embeddings, so no schema change) and `qwen2.5:3b` for answers by default. Development uses it instead of the mock; OpenAI stays available for when better answers are worth paying for.
+
+**Why:** The user asked for a completely free option. Ollama has no per-use cost and keeps documents on hardware the organisation controls, which is the strongest privacy position. Free hosted tiers were rejected: Gemini's free tier may use submitted content to improve products, and Groq has no embeddings. Trade-off: small CPU-run models are slower (a few seconds per answer here) and write simpler answers, so the prompt repeats the citation instruction after the sources and the server normalises stray citation formats (e.g. echoed `<source>` tags, "(Source 2)") into `[n]`. A larger model (e.g. `qwen2.5:7b`) or a GPU server improves quality without code changes.
+

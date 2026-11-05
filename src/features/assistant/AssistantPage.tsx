@@ -93,7 +93,8 @@ export function AssistantPage() {
     setQuestion('')
   }
 
-  const usingMock = history[0]?.result.provider === 'mock'
+  const latest = history[0]?.result
+  const usingMock = latest?.provider === 'mock'
 
   return (
     <>
@@ -101,7 +102,10 @@ export function AssistantPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge tone="warning">Development preview</Badge>
         <span className="text-xs text-slate-600">
-          No AI provider is connected yet. A free mock quotes the best-matching passages instead of writing an answer. Conversations and feedback come in Phase 5.
+          {latest && latest.provider !== 'mock'
+            ? `Answers are written by ${latest.model} (${latest.provider}) from passages you can access. Check the sources before relying on them.`
+            : 'Answers only use passages you can access. In development a free mock may quote passages instead of writing answers.'}{' '}
+          Conversations and feedback come in Phase 5.
         </span>
       </div>
       <Card className="mb-6">

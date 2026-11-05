@@ -16,6 +16,13 @@ describe('getProvider', () => {
     expect(provider.minSimilarity).toBe(0.3)
   })
 
+  it('uses free self-hosted Ollama models when selected', () => {
+    const provider = getProvider(env({ AI_PROVIDER: 'ollama' }))
+    expect(provider.name).toBe('ollama')
+    expect(provider.embeddingModel).toBe('mxbai-embed-large')
+    expect(getProvider(env({ AI_PROVIDER: 'ollama', AI_CHAT_MODEL: 'llama3.2:3b' })).chatModel).toBe('llama3.2:3b')
+  })
+
   it('rejects unknown providers', () => {
     expect(() => getProvider(env({ AI_PROVIDER: 'other' }))).toThrow('Unknown AI provider')
   })

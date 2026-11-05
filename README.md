@@ -57,9 +57,24 @@ npm run seed:documents
 
 `samples/` is regenerated with `python3 scripts/make_samples.py` (needs `fpdf2` and `python-docx`). All sample content is fictional.
 
-### AI retrieval (local only)
+### AI providers (local)
 
-No AI provider is connected. By default the Edge Functions use a free **mock provider** (`AI_PROVIDER` unset): hashed word embeddings and extractive answers that quote the best-matching passages with citations. The **AI Assistant** page calls the `ask-question` function, which searches only passages the signed-in user may read (RLS) and logs every question in `ai_queries`.
+The Edge Functions pick an AI provider from server-side settings in `supabase/functions/.env` (git-ignored; restart Supabase after changing it):
+
+| `AI_PROVIDER` | Cost | Notes |
+|---|---|---|
+| `mock` (default) | Free | Hashed word embeddings; quotes the best-matching passages. No setup. |
+| `ollama` | Free, self-hosted | Real AI on your own hardware; documents never leave it. Install [Ollama](https://ollama.com), run `ollama pull mxbai-embed-large` and `ollama pull qwen2.5:3b`, and make it listen on all interfaces (`OLLAMA_HOST=0.0.0.0`) so the Supabase containers can reach it at `http://host.docker.internal:11434` (override with `OLLAMA_URL`). |
+| `openai` | Paid per use | Needs `OPENAI_API_KEY` with credit. Best answer quality. |
+
+Example `supabase/functions/.env` for Ollama:
+
+```bash
+AI_PROVIDER=ollama
+# optional: AI_CHAT_MODEL=llama3.2:3b  AI_EMBEDDING_MODEL=mxbai-embed-large  OLLAMA_URL=http://host.docker.internal:11434
+```
+
+After switching provider, call the `reindex-embeddings` function as an admin or knowledge manager (once per organisation) until `remaining` is 0, so existing passages get the new provider's embeddings. The **AI Assistant** page calls the `ask-question` function, which searches only passages the signed-in user may read (RLS) and logs every question in `ai_queries`.
 
 Check the sample questions (right documents cited, restricted ones never leaked) after seeding:
 
@@ -67,7 +82,7 @@ Check the sample questions (right documents cited, restricted ones never leaked)
 npm run eval:questions
 ```
 
-To use OpenAI later (only after approval), set server-side secrets — never in `.env.local` or the browser: `AI_PROVIDER=openai`, `OPENAI_API_KEY`, optionally `AI_CHAT_MODEL`, `AI_EMBEDDING_MODEL`, `AI_MIN_SIMILARITY`. Then call the `reindex-embeddings` function (admin or knowledge manager) until `remaining` is 0, so existing passages get the new provider's embeddings.
+Keys belong only in server-side settings, never in `.env.local` or the browser. Optional for every provider: `AI_CHAT_MODEL`, `AI_EMBEDDING_MODEL`, `AI_MIN_SIMILARITY`.
 
 On Windows (PowerShell) use `Copy-Item .env.example .env.local` instead of `cp`.
 
