@@ -138,6 +138,17 @@ describe('AssistantPage', () => {
     await waitFor(() => expect(screen.queryByRole('link', { name: 'Hotel limits' })).not.toBeInTheDocument())
   })
 
+  it('starts a clean conversation after an error in another one', async () => {
+    askQuestion.mockResolvedValue({ ok: false, error: 'Conversation not found' })
+    renderPage('/assistant/c-other')
+    await userEvent.type(await screen.findByLabelText('Ask a follow-up'), 'And bank transfers?')
+    await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+    expect(await screen.findByText('Conversation not found')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'New conversation' }))
+    expect(await screen.findByLabelText('Your question')).toHaveValue('')
+    expect(screen.queryByText('Conversation not found')).not.toBeInTheDocument()
+  })
+
   it('validates short questions and shows errors', async () => {
     askQuestion.mockResolvedValue({ ok: false, error: 'You have asked a lot of questions. Try again later.' })
     renderPage()

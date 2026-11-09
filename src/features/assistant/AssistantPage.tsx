@@ -188,12 +188,14 @@ export function AssistantPage() {
   }, [refreshConversations])
 
   useEffect(() => {
+    if (conversationId && conversationId === loadedFor.current) return
+    setError(null)
+    setQuestion('')
     if (!conversationId) {
       if (loadedFor.current !== null) setMessages([])
       loadedFor.current = null
       return
     }
-    if (conversationId === loadedFor.current) return
     loadedFor.current = conversationId
     setLoading(true)
     void getConversationMessages(conversationId).then((result) => {
