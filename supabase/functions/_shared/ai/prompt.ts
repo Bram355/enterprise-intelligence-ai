@@ -43,13 +43,17 @@ export function fenceText(text: string): string {
 // Repeated after the sources because small models follow the nearest instruction.
 const REMINDER = 'Answer the question using only the sources above, citing each statement with its source number like [1].'
 
-export function buildMessages(question: string, sources: Source[], earlier: string[] = []): ChatMessage[] {
-  const blocks = sources
+export function sourceBlocks(sources: Source[]): string {
+  return sources
     .map((s) => {
       const page = s.page ? ` page="${s.page}"` : ''
       return `<source id="${s.n}" title="${escapeAttr(s.title)}"${page}>\n${fenceText(s.content)}\n</source>`
     })
     .join('\n\n')
+}
+
+export function buildMessages(question: string, sources: Source[], earlier: string[] = []): ChatMessage[] {
+  const blocks = sourceBlocks(sources)
   const context = earlier.length
     ? `<earlier_questions>\n${earlier.map((q) => `- ${fenceText(q)}`).join('\n')}\n</earlier_questions>\n\n`
     : ''

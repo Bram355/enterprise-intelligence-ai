@@ -31,6 +31,7 @@ export function getProvider(env: EnvReader = (name) => Deno.env.get(name)): AiPr
         chatModel: env('AI_CHAT_MODEL') ?? 'qwen2.5:7b',
         embeddingModel: env('AI_EMBEDDING_MODEL') ?? 'mxbai-embed-large',
         minSimilarity: Number.isFinite(minSimilarity) ? minSimilarity : undefined,
+        timeoutMs: Number(env('AI_TIMEOUT_MS')) > 0 ? Number(env('AI_TIMEOUT_MS')) : undefined,
       })
     default:
       throw new AiProviderError(`Unknown AI provider "${provider}".`)

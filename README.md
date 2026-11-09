@@ -12,8 +12,9 @@ Organisation-wide AI knowledge platform: upload internal documents, then ask an 
 | 2 | Database schema, invite-only auth, roles, security policies | Done |
 | 3 | Knowledge library: upload, processing, versions, archiving, keyword search, document permissions | Done |
 | 4 | AI retrieval: embeddings (pgvector), permission-aware hybrid search, provider adapter (mock, Ollama, OpenAI), answers with citations | Done |
-| 5 | AI assistant: saved conversations, follow-up questions, clarifying questions, helpful/not helpful feedback, section references | In review |
-| 6–9 | Technical support module, admin and analytics, QA and security review, deployment prep | Planned |
+| 5 | AI assistant: saved conversations, follow-up questions, clarifying questions, helpful/not helpful feedback, section references | Done |
+| 6 | Technical support: structured troubleshooting with cited causes and steps, step outcomes, escalation handoff, saved support cases | In review |
+| 7–9 | Admin and analytics, QA and security review, deployment prep | Planned |
 
 ## Prerequisites
 
@@ -85,7 +86,15 @@ Check the sample questions and conversation rules (right documents cited, restri
 npm run eval:questions
 ```
 
-Keys belong only in server-side settings, never in `.env.local` or the browser. Optional for every provider: `AI_CHAT_MODEL`, `AI_EMBEDDING_MODEL`, `AI_MIN_SIMILARITY`.
+Technical Support (Phase 6): on **Technical Support**, pick a category, optionally an error code (e.g. `T-102`, `429`) and the environment, and describe the problem. The `troubleshoot` function searches only documents you may read and returns a saved support case: a one-line summary, likely causes, numbered diagnostic steps with what you should see, and escalation guidance. Every cause and step must cite a source; anything uncited is dropped. Mark each step "Fixed it", "Didn't help" or "Skip"; a fix resolves the case, and when nothing is left to try the page shows a copyable handoff summary and "Mark as escalated". Cases are private to their owner; organisation admins can view (not change) their organisation's cases. There is no Jira/Zendesk integration yet. Seed just the support documents with `npm run seed:documents -- pos-terminal http-error sdk-plugin`, then check sample problems and case privacy with:
+
+```bash
+npm run eval:support
+```
+
+On a CPU-only machine a diagnosis with `qwen2.5:7b` can take 1–2 minutes; the Ollama request timeout is 120 s (`AI_TIMEOUT_MS`; keep it under the 150 s Edge Function limit) and diagnoses are capped at 400 tokens.
+
+Keys belong only in server-side settings, never in `.env.local` or the browser. Optional for every provider: `AI_CHAT_MODEL`, `AI_EMBEDDING_MODEL`, `AI_MIN_SIMILARITY` (and `AI_TIMEOUT_MS` for Ollama).
 
 On Windows (PowerShell) use `Copy-Item .env.example .env.local` instead of `cp`.
 
@@ -103,6 +112,7 @@ On Windows (PowerShell) use `Copy-Item .env.example .env.local` instead of `cp`.
 | `npm run test:db` | Database security tests (pgTAP, needs local Supabase running) |
 | `npm run seed:documents` | Upload the synthetic sample documents through the real upload function (local only) |
 | `npm run eval:questions` | Ask sample questions as different demo users and check citations and permissions (local only) |
+| `npm run eval:support` | Run sample technical problems through `troubleshoot` and check citations, permissions and support-case privacy (local only) |
 | `npm run db:types` | Regenerate `src/types/database.ts` from the local database |
 | `npm run db:start` / `db:stop` / `db:status` / `db:reset` | Manage the local Supabase stack |
 

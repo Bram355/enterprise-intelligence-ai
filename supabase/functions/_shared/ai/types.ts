@@ -16,6 +16,11 @@ export interface Generation {
   outputTokens: number | null
 }
 
+export interface GenerateOptions {
+  /** Upper bound on answer length, to keep slow local models within the request time limit. */
+  maxTokens?: number
+}
+
 export interface AiProvider {
   readonly name: string
   readonly chatModel: string
@@ -23,7 +28,7 @@ export interface AiProvider {
   /** Minimum cosine similarity for a passage to count as relevant to a question. */
   readonly minSimilarity: number
   embed(texts: string[], purpose: EmbeddingPurpose): Promise<number[][]>
-  generate(messages: ChatMessage[]): Promise<Generation>
+  generate(messages: ChatMessage[], options?: GenerateOptions): Promise<Generation>
 }
 
 export class AiProviderError extends Error {
