@@ -65,7 +65,7 @@ The Edge Functions pick an AI provider from server-side settings in `supabase/fu
 | `AI_PROVIDER` | Cost | Notes |
 |---|---|---|
 | `mock` (default) | Free | Hashed word embeddings; quotes the best-matching passages. No setup. |
-| `ollama` | Free, self-hosted | Real AI on your own hardware; documents never leave it. Install [Ollama](https://ollama.com), run `ollama pull mxbai-embed-large` and `ollama pull qwen2.5:3b`, and make it listen on all interfaces (`OLLAMA_HOST=0.0.0.0`) so the Supabase containers can reach it at `http://host.docker.internal:11434` (override with `OLLAMA_URL`). |
+| `ollama` | Free, self-hosted | Real AI on your own hardware; documents never leave it. Install [Ollama](https://ollama.com), run `ollama pull mxbai-embed-large` and `ollama pull qwen2.5:7b` (4.7 GB; on a low-memory PC set `AI_CHAT_MODEL=qwen2.5:3b` for faster, simpler answers), and make it listen on all interfaces (`OLLAMA_HOST=0.0.0.0`) so the Supabase containers can reach it at `http://host.docker.internal:11434` (override with `OLLAMA_URL`). |
 | `openai` | Paid per use | Needs `OPENAI_API_KEY` with credit. Best answer quality. |
 
 Example `supabase/functions/.env` for Ollama:

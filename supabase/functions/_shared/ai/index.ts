@@ -28,7 +28,7 @@ export function getProvider(env: EnvReader = (name) => Deno.env.get(name)): AiPr
     case 'ollama':
       return createOllamaProvider({
         baseUrl: env('OLLAMA_URL') ?? 'http://host.docker.internal:11434',
-        chatModel: env('AI_CHAT_MODEL') ?? 'qwen2.5:3b',
+        chatModel: env('AI_CHAT_MODEL') ?? 'qwen2.5:7b',
         embeddingModel: env('AI_EMBEDDING_MODEL') ?? 'mxbai-embed-large',
         minSimilarity: Number.isFinite(minSimilarity) ? minSimilarity : undefined,
       })

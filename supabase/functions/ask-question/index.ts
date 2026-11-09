@@ -3,7 +3,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { getProvider, type AiProvider } from '../_shared/ai/index.ts'
 import { buildSearchQuery, MAX_EARLIER_QUESTIONS } from '../_shared/ai/conversation.ts'
-import { bestSection, buildMessages, isClarification, isNoAnswer, NO_ANSWER, parseCitations, type Source, vagueQuestionReply } from '../_shared/ai/prompt.ts'
+import { bestSection, buildMessages, isClarification, isNoAnswer, NO_ANSWER, parseCitations, isExtractionAttempt, REFUSAL, type Source, vagueQuestionReply } from '../_shared/ai/prompt.ts'
 import { corsHeaders, json } from '../_shared/cors.ts'
 
 const MAX_QUESTIONS_PER_HOUR = 60
@@ -114,6 +114,21 @@ Deno.serve(async (req) => {
       .single()
 
   const touchConversation = () => admin.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId)
+
+  if (isExtractionAttempt(question)) {
+    const { data: logged } = await log({ status: 'no_answer', answer: REFUSAL, citations: [], chunk_ids: [], error: 'refused: extraction attempt' })
+    await touchConversation()
+    return json(200, {
+      queryId: logged?.id ?? null,
+      conversationId,
+      status: 'no_answer',
+      answer: REFUSAL,
+      citations: [],
+      sourcesConsidered: 0,
+      provider: provider.name,
+      model: provider.chatModel,
+    })
+  }
 
   const vague = vagueQuestionReply(question, earlier)
   if (vague) {
