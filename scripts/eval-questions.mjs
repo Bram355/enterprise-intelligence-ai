@@ -58,5 +58,32 @@ for (const c of cases) {
   console.log(`${problems.length ? 'FAIL' : 'pass'}  ${c.as.padEnd(24)} ${c.q}`)
   for (const p of problems) console.log(`      ${p}`)
 }
-console.log(`\n${cases.length - failures}/${cases.length} sample questions passed`)
-process.exit(failures ? 1 : 0)
+console.log(`\n${cases.length - failures}/${cases.length} sample questions passed\n`)
+
+// Phase 5: conversations, follow-ups and feedback, checked through the same APIs the browser uses.
+const ask = (client, question, conversationId) =>
+  client.functions.invoke('ask-question', { body: conversationId ? { question, conversationId } : { question } })
+const support = await clientFor('employee@northwind.test')
+const finance = await clientFor('finance@northwind.test')
+const first = await ask(support, 'How do card payments settle?')
+const followUp = await ask(support, 'And bank transfers?', first.data?.conversationId)
+const hijack = await ask(finance, 'And chargebacks?', first.data?.conversationId)
+const supportFeedback = await support.from('answer_feedback').insert({ query_id: followUp.data?.queryId, rating: 'helpful' })
+const financeFeedback = await finance.from('answer_feedback').insert({ query_id: first.data?.queryId, rating: 'not_helpful' })
+const financeView = await finance.from('conversations').select('id').eq('id', first.data?.conversationId ?? '')
+const ownView = await support.from('ai_queries').select('id').eq('conversation_id', first.data?.conversationId ?? '')
+
+const checks = [
+  ['first question starts a conversation', Boolean(first.data?.conversationId) && first.data.citations.some((c) => c.title === API)],
+  ['follow-up stays in the conversation and finds the right document', followUp.data?.conversationId === first.data?.conversationId && followUp.data.citations.some((c) => c.title === API)],
+  ['follow-up answer covers bank transfers', /T\+1|bank transfer/i.test(followUp.data?.answer ?? '')],
+  ["another user can't continue someone else's conversation", Boolean(hijack.error) && !hijack.data],
+  ['owner can rate their answer', !supportFeedback.error],
+  ["another user can't rate someone else's answer", Boolean(financeFeedback.error)],
+  ["another user can't see someone else's conversation", financeView.data?.length === 0],
+  ['owner sees both messages in history', ownView.data?.length === 2],
+]
+for (const [name, ok] of checks) console.log(`${ok ? 'pass' : 'FAIL'}  ${name}`)
+const convoFailures = checks.filter(([, ok]) => !ok).length
+console.log(`\n${checks.length - convoFailures}/${checks.length} conversation checks passed`)
+process.exit(failures || convoFailures ? 1 : 0)

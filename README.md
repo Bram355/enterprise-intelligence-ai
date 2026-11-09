@@ -11,8 +11,9 @@ Organisation-wide AI knowledge platform: upload internal documents, then ask an 
 | 1 | Project foundation, app shell, local backend | Done |
 | 2 | Database schema, invite-only auth, roles, security policies | Done |
 | 3 | Knowledge library: upload, processing, versions, archiving, keyword search, document permissions | Done |
-| 4 | AI retrieval: embeddings (pgvector), permission-aware hybrid search, provider adapter (mock until approved), answers with citations | In review |
-| 5–9 | AI assistant, assistant, support module, admin, QA, deployment prep | Planned |
+| 4 | AI retrieval: embeddings (pgvector), permission-aware hybrid search, provider adapter (mock, Ollama, OpenAI), answers with citations | Done |
+| 5 | AI assistant: saved conversations, follow-up questions, clarifying questions, helpful/not helpful feedback, section references | In review |
+| 6–9 | Technical support module, admin and analytics, QA and security review, deployment prep | Planned |
 
 ## Prerequisites
 
@@ -76,7 +77,9 @@ AI_PROVIDER=ollama
 
 After switching provider, call the `reindex-embeddings` function as an admin or knowledge manager (once per organisation) until `remaining` is 0, so existing passages get the new provider's embeddings. The **AI Assistant** page calls the `ask-question` function, which searches only passages the signed-in user may read (RLS) and logs every question in `ai_queries`.
 
-Check the sample questions (right documents cited, restricted ones never leaked) after seeding:
+Conversations (Phase 5): each chat is saved under **AI Assistant** and can be reopened or deleted. Follow-ups like "and bank transfers?" are rewritten into a standalone search using the last 3 questions, vague questions get a "Could you clarify…" reply, and every answer has helpful / not helpful buttons (admins can read their organisation's feedback). Sources show the document, section, page and version.
+
+Check the sample questions and conversation rules (right documents cited, restricted ones never leaked, nobody can read, continue or rate someone else's conversation) after seeding:
 
 ```bash
 npm run eval:questions

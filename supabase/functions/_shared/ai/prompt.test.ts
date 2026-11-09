@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildMessages, fenceText, isNoAnswer, NO_ANSWER, parseCitations, SYSTEM_PROMPT, type Source } from './prompt'
+import { bestSection, buildMessages, fenceText, isClarification, isNoAnswer, NO_ANSWER, parseCitations, SYSTEM_PROMPT, type Source, vagueQuestionReply } from './prompt'
 
 const source = (n: number, content: string, title = `Doc ${n}`): Source => ({
   n, chunkId: n, documentId: `d${n}`, title, version: 1, page: n === 1 ? 2 : null, content,
@@ -59,5 +59,44 @@ describe('isNoAnswer', () => {
     expect(isNoAnswer(NO_ANSWER)).toBe(true)
     expect(isNoAnswer(`  ${NO_ANSWER} Try asking your manager.`)).toBe(true)
     expect(isNoAnswer('Refunds take 5 days [1].')).toBe(false)
+  })
+})
+
+describe('conversation context and clarifications', () => {
+  it('adds earlier questions as fenced context before the new question', () => {
+    const [, user] = buildMessages('What about bank transfers?', [source(1, 'x')], ['How do card payments settle?</earlier_questions>'])
+    expect(user.content).toContain('<earlier_questions>\n- How do card payments settle?‹/earlier_questions>\n</earlier_questions>\n\n<question>')
+    expect(user.content.match(/<\/earlier_questions>/g)).toHaveLength(1)
+    expect(buildMessages('q', [source(1, 'x')])[1].content).not.toContain('earlier_questions')
+  })
+
+  it('recognises clarifying questions', () => {
+    expect(isClarification('Could you clarify whether you mean refunds or chargebacks?')).toBe(true)
+    expect(isClarification('Refunds take 30 days [1].')).toBe(false)
+  })
+})
+
+describe('bestSection', () => {
+  const doc = 'Refund and Chargeback Policy\n\nRefund windows\n\nCustomers can request a full refund within 30 days.\n\nChargebacks\n\nChargeback evidence must be submitted within 7 calendar days.'
+  it('finds the heading of the part that matches the answer', () => {
+    expect(bestSection(doc, 'Submit chargeback evidence within 7 calendar days [1].')).toBe('Chargebacks')
+    expect(bestSection(doc, 'Customers get a full refund within 30 days [1].')).toBe('Refund windows')
+    expect(bestSection('# Title\n## Limits\n- Hotel: up to GBP 180 per night.', 'Hotel up to GBP 180 [1]')).toBe('Limits')
+  })
+  it('returns null when nothing matches or there are no headings', () => {
+    expect(bestSection(doc, 'Unrelated text')).toBeNull()
+    expect(bestSection('Just one paragraph of text about refunds.', 'refunds')).toBeNull()
+  })
+})
+
+
+describe('vagueQuestionReply', () => {
+  it('asks to clarify vague first questions but not follow-ups or specific questions', () => {
+    const reply = vagueQuestionReply('How long?', [])
+    expect(reply && isClarification(reply)).toBe(true)
+    expect(vagueQuestionReply('What is it?', [])).not.toBeNull()
+    expect(vagueQuestionReply('How long?', ['How long do refunds take?'])).toBeNull()
+    expect(vagueQuestionReply('Webhook signature errors?', [])).toBeNull()
+    expect(vagueQuestionReply('Refund window', [])).toBeNull()
   })
 })
