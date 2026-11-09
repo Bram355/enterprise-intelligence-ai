@@ -672,6 +672,137 @@ export type Database = {
           },
         ];
       };
+      support_case_steps: {
+        Row: {
+          action: string;
+          case_id: string;
+          citations: number[];
+          expected: string | null;
+          id: number;
+          outcome: Database["public"]["Enums"]["step_outcome"];
+          position: number;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          action: string;
+          case_id: string;
+          citations?: number[];
+          expected?: string | null;
+          id?: never;
+          outcome?: Database["public"]["Enums"]["step_outcome"];
+          position: number;
+          updated_at?: string;
+        };
+        Update: {
+          action?: string;
+          case_id?: string;
+          citations?: number[];
+          expected?: string | null;
+          id?: never;
+          outcome?: Database["public"]["Enums"]["step_outcome"];
+          position?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_case_steps_case_id_fkey";
+            columns: ["case_id"];
+            isOneToOne: false;
+            referencedRelation: "support_cases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      support_cases: {
+        Row: {
+          category: Database["public"]["Enums"]["support_category"];
+          causes: NonNullable<Json>;
+          closed_at: string | null;
+          created_at: string;
+          environment: string;
+          error_code: string | null;
+          escalation: Json | null;
+          id: string;
+          model: string;
+          organisation_id: string;
+          problem: string;
+          provider: string;
+          query_id: string | null;
+          sources: NonNullable<Json>;
+          status: Database["public"]["Enums"]["support_case_status"];
+          summary: string | null;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          category: Database["public"]["Enums"]["support_category"];
+          causes?: NonNullable<Json>;
+          closed_at?: string | null;
+          created_at?: string;
+          environment?: string;
+          error_code?: string | null;
+          escalation?: Json | null;
+          id?: string;
+          model: string;
+          organisation_id: string;
+          problem: string;
+          provider: string;
+          query_id?: string | null;
+          sources?: NonNullable<Json>;
+          status?: Database["public"]["Enums"]["support_case_status"];
+          summary?: string | null;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          category?: Database["public"]["Enums"]["support_category"];
+          causes?: NonNullable<Json>;
+          closed_at?: string | null;
+          created_at?: string;
+          environment?: string;
+          error_code?: string | null;
+          escalation?: Json | null;
+          id?: string;
+          model?: string;
+          organisation_id?: string;
+          problem?: string;
+          provider?: string;
+          query_id?: string | null;
+          sources?: NonNullable<Json>;
+          status?: Database["public"]["Enums"]["support_case_status"];
+          summary?: string | null;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_cases_organisation_id_fkey";
+            columns: ["organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "organisations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "support_cases_query_id_fkey";
+            columns: ["query_id"];
+            isOneToOne: false;
+            referencedRelation: "ai_queries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "support_cases_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -716,6 +847,16 @@ export type Database = {
       document_visibility: "organisation" | "departments";
       feedback_rating: "helpful" | "not_helpful";
       invitation_status: "pending" | "accepted" | "revoked";
+      step_outcome: "pending" | "fixed" | "not_fixed" | "skipped";
+      support_case_status: "open" | "resolved" | "escalated";
+      support_category:
+        | "api_auth"
+        | "http_errors"
+        | "payments"
+        | "pos_terminal"
+        | "webhooks"
+        | "sdk_plugins"
+        | "other";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -840,6 +981,17 @@ export const Constants = {
       document_visibility: ["organisation", "departments"],
       feedback_rating: ["helpful", "not_helpful"],
       invitation_status: ["pending", "accepted", "revoked"],
+      step_outcome: ["pending", "fixed", "not_fixed", "skipped"],
+      support_case_status: ["open", "resolved", "escalated"],
+      support_category: [
+        "api_auth",
+        "http_errors",
+        "payments",
+        "pos_terminal",
+        "webhooks",
+        "sdk_plugins",
+        "other",
+      ],
     },
   },
 } as const;

@@ -15,7 +15,7 @@ interface OllamaOptions {
 const QUERY_PREFIX = 'Represent this sentence for searching relevant passages: '
 
 export function createOllamaProvider(options: OllamaOptions): AiProvider {
-  const { chatModel, embeddingModel, timeoutMs = 120_000 } = options
+  const { chatModel, embeddingModel, timeoutMs = 180_000 } = options
   const baseUrl = options.baseUrl.replace(/\/+$/, '')
   const doFetch = options.fetchImpl ?? fetch
 

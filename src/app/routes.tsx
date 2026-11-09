@@ -39,7 +39,7 @@ export const routes: RouteObject[] = [
         ),
       },
       { path: 'library/:id', element: <DocumentDetailPage /> },
-      { path: 'support', element: <SupportPage /> },
+      { path: 'support/:caseId?', element: <SupportPage /> },
       {
         path: 'admin',
         element: (
