@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { NO_ANSWER, type Source } from './prompt'
-import { buildSupportMessages, escalationFromSources, parseDiagnosis, supportSearchQuery } from './support'
+import { buildSupportMessages, escalationFromSources, parseDiagnosis, sourcesCoverProblem, supportSearchQuery } from './support'
 
 const source = (n: number, content: string): Source => ({ n, chunkId: n, documentId: `d${n}`, title: `Doc ${n}`, version: 1, page: null, content })
 const sources = [
@@ -87,4 +87,23 @@ describe('buildSupportMessages', () => {
     expect(d.steps.map((s) => s.expected)).toEqual(['Terminal shows Ready', null])
     expect(d.escalation?.text).toBe('Escalate to Field Engineering. include the serial number')
   })
+
+  it('only treats sources as relevant when they share the error code or enough keywords', () => {
+    const store = [{ ...sources[0], content: 'Unlock the front door, switch on the lights and count the till float.' }]
+    const http = [{ ...sources[0], content: '429 Too Many Requests: wait for Retry-After, then retry with exponential backoff.' }]
+    const ask = (problem: string, errorCode: string | null = null) => ({ category: 'http_errors' as const, problem, errorCode, environment: 'live' as const })
+    expect(sourcesCoverProblem(ask('We get 429 Too Many Requests from the payments API', '429'), store)).toBe(false)
+    expect(sourcesCoverProblem(ask('We get 429 Too Many Requests from the payments API', '429'), http)).toBe(true)
+    expect(sourcesCoverProblem(ask('Too many requests during the evening batch run'), http)).toBe(true)
+    expect(sourcesCoverProblem(ask('What is the nightly hotel limit for business travel?'), store)).toBe(false)
+    expect(sourcesCoverProblem(ask('anything'), [])).toBe(false)
+    // Each passage shares one keyword: together they look relevant, but none covers the problem.
+    const scattered = [
+      { ...sources[0], content: 'The rate limit is 100 requests per second.' },
+      { ...sources[0], content: 'Refunds settle within 5 business days.' },
+      { ...sources[0], content: 'Restart the terminal each night.' },
+    ]
+    expect(sourcesCoverProblem(ask('What is the nightly hotel limit for business travel?'), scattered)).toBe(false)
+  })
 })
+

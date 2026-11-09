@@ -145,3 +145,27 @@ export function escalationFromSources(sources: Source[], preferred: number[]): C
   }
   return null
 }
+
+const STOPWORDS = new Set(
+  'this that with from your have will when then than they them what which into only also each does been were their there about after before should could would every since still cannot please error errors issue problem working work'.split(' '),
+)
+const MIN_RELEVANCE = 0.3
+
+function keywords(text: string): Set<string> {
+  return new Set((text.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => w.length >= 4 && !STOPWORDS.has(w)).map((w) => w.slice(0, 5)))
+}
+
+/**
+ * True when at least one retrieved passage plausibly covers the problem: it mentions the error code or
+ * shares enough of the problem's keywords. Stops the model inventing steps from unrelated documents.
+ */
+export function sourcesCoverProblem(request: SupportRequest, sources: Source[]): boolean {
+  const wanted = keywords(request.problem)
+  const code = request.errorCode?.toLowerCase()
+  return sources.some((source) => {
+    if (code && source.content.toLowerCase().includes(code)) return true
+    if (wanted.size === 0) return false
+    const found = keywords(source.content)
+    return [...wanted].filter((w) => found.has(w)).length / wanted.size >= MIN_RELEVANCE
+  })
+}

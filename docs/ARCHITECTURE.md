@@ -88,6 +88,7 @@ Support page (/support/:caseId?)
   → troubleshoot { category, problem, errorCode?, environment }
       validates input, refuses instruction-override text, shares the 60/hour question limit
       → match_chunks with "category + error code + problem", as the user (same RLS), top 4
+      → relevance gate: some passage must contain the error code or ≥30% of the problem's keywords
       → provider with a structured prompt: SUMMARY / CAUSE [n] / STEP action => expected [n] / ESCALATE [n]
       → parser keeps only lines citing supplied sources (max 4 causes, 6 steps);
         escalation falls back to a cited "escalate…" sentence from the sources

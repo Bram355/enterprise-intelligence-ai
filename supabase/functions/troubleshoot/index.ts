@@ -7,6 +7,7 @@ import {
   buildSupportMessages,
   escalationFromSources,
   parseDiagnosis,
+  sourcesCoverProblem,
   SUPPORT_CATEGORIES,
   supportSearchQuery,
   type SupportCategory,
@@ -132,7 +133,7 @@ Deno.serve(async (req) => {
 
     let diagnosis = parseDiagnosis('', sources)
     let usage = { inputTokens: null as number | null, outputTokens: null as number | null }
-    if (sources.length > 0) {
+    if (sourcesCoverProblem(request, sources)) {
       const generation = await provider.generate(buildSupportMessages(request, sources))
       usage = { inputTokens: generation.inputTokens, outputTokens: generation.outputTokens }
       diagnosis = parseDiagnosis(generation.text, sources)
