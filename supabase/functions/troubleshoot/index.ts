@@ -18,6 +18,8 @@ import { corsHeaders, json } from '../_shared/cors.ts'
 const MAX_QUESTIONS_PER_HOUR = 60
 // Fewer passages than the assistant keeps the longer structured prompt fast on CPU-only machines.
 const MAX_SOURCES = 4
+// Hosted and local Edge Functions stop after 150 s, so keep generation short.
+const MAX_ANSWER_TOKENS = 400
 const ERROR_CODE = /^[A-Za-z0-9][A-Za-z0-9 ._:/-]{0,39}$/
 
 interface MatchRow {
@@ -134,7 +136,7 @@ Deno.serve(async (req) => {
     let diagnosis = parseDiagnosis('', sources)
     let usage = { inputTokens: null as number | null, outputTokens: null as number | null }
     if (sourcesCoverProblem(request, sources)) {
-      const generation = await provider.generate(buildSupportMessages(request, sources))
+      const generation = await provider.generate(buildSupportMessages(request, sources), { maxTokens: MAX_ANSWER_TOKENS })
       usage = { inputTokens: generation.inputTokens, outputTokens: generation.outputTokens }
       diagnosis = parseDiagnosis(generation.text, sources)
     }
@@ -195,6 +197,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'unknown error'
     await log({ status: 'failed', error: message })
+    if (/too long/.test(message)) return json(504, { error: 'The diagnosis took too long. Please try again in a minute.' })
     return json(502, { error: 'The assistant could not diagnose this right now. Please try again.' })
   }
 })

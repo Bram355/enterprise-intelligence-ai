@@ -92,7 +92,7 @@ Technical Support (Phase 6): on **Technical Support**, pick a category, optional
 npm run eval:support
 ```
 
-On a CPU-only machine a diagnosis with `qwen2.5:7b` can take 1–2 minutes; the Ollama request timeout is 180 s (`AI_TIMEOUT_MS` to change it).
+On a CPU-only machine a diagnosis with `qwen2.5:7b` can take 1–2 minutes; the Ollama request timeout is 120 s (`AI_TIMEOUT_MS`; keep it under the 150 s Edge Function limit) and diagnoses are capped at 400 tokens.
 
 Keys belong only in server-side settings, never in `.env.local` or the browser. Optional for every provider: `AI_CHAT_MODEL`, `AI_EMBEDDING_MODEL`, `AI_MIN_SIMILARITY` (and `AI_TIMEOUT_MS` for Ollama).
 

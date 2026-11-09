@@ -15,7 +15,7 @@ interface OllamaOptions {
 const QUERY_PREFIX = 'Represent this sentence for searching relevant passages: '
 
 export function createOllamaProvider(options: OllamaOptions): AiProvider {
-  const { chatModel, embeddingModel, timeoutMs = 180_000 } = options
+  const { chatModel, embeddingModel, timeoutMs = 120_000 } = options
   const baseUrl = options.baseUrl.replace(/\/+$/, '')
   const doFetch = options.fetchImpl ?? fetch
 
@@ -28,7 +28,8 @@ export function createOllamaProvider(options: OllamaOptions): AiProvider {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(timeoutMs),
       })
-    } catch {
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'TimeoutError') throw new AiProviderError('The AI service took too long to answer.')
       throw new AiProviderError('The AI service could not be reached.')
     }
     if (!response.ok) {
@@ -53,12 +54,12 @@ export function createOllamaProvider(options: OllamaOptions): AiProvider {
       }
       return vectors
     },
-    async generate(messages): Promise<Generation> {
+    async generate(messages, generateOptions): Promise<Generation> {
       const result = await post<{ message?: { content?: string }; prompt_eval_count?: number; eval_count?: number }>('/api/chat', {
         model: chatModel,
         messages,
         stream: false,
-        options: { temperature: 0.1 },
+        options: { temperature: 0.1, ...(generateOptions?.maxTokens ? { num_predict: generateOptions.maxTokens } : {}) },
       })
       const text = result.message?.content?.trim()
       if (!text) throw new AiProviderError('The AI service returned an empty answer.')
