@@ -58,7 +58,7 @@ Upload flow: form → `upload-document` Edge Function (role check, file validati
 ```
 Question (AI Assistant page)
   → ask-question Edge Function: checks user, validates, rate-limits (60/hour)
-  → embed question (provider adapter: mock | openai)
+  → embed question (provider adapter: mock | ollama | openai)
   → match_chunks RPC as the user (RLS): meaning + keyword search, top 6 permitted passages
   → none relevant? reply "couldn't find this" without calling the AI
   → fixed system prompt + fenced sources + question → provider.generate
@@ -66,6 +66,20 @@ Question (AI Assistant page)
 ```
 
 Uploads embed each passage (title + text) via the same adapter; if the AI service fails the document stays keyword-searchable and `reindex-embeddings` fills the gaps later. Tests: `supabase/tests/retrieval.test.sql`, unit tests in `supabase/functions/_shared/ai/`, and `npm run eval:questions` against the running stack.
+
+## AI assistant conversations (Phase 5)
+
+```
+Assistant page (/assistant/:conversationId?)
+  → ask-question { question, conversationId? }
+      new: creates a conversation owned by the caller
+      follow-up: checks the conversation is the caller's, loads its last 3 questions,
+                 rewrites the follow-up into a standalone search query (model, with fallback)
+      → match_chunks with the search query, as the user (same RLS as Phase 4)
+      → provider answer (earlier questions fenced as context) → answered | no_answer | needs_clarification
+      → logs ai_queries (conversation_id, search_query), returns citations with section
+  → browser reads conversations / ai_queries / answer_feedback directly, under RLS
+```
 
 ## Frontend layout
 

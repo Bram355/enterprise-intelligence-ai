@@ -28,6 +28,7 @@ export type Database = {
           answer: string | null;
           chunk_ids: number[];
           citations: NonNullable<Json>;
+          conversation_id: string | null;
           created_at: string;
           error: string | null;
           id: string;
@@ -38,6 +39,7 @@ export type Database = {
           output_tokens: number | null;
           provider: string;
           question: string;
+          search_query: string | null;
           status: Database["public"]["Enums"]["ai_query_status"];
           user_id: string | null;
         };
@@ -46,6 +48,7 @@ export type Database = {
           answer?: string | null;
           chunk_ids?: number[];
           citations?: NonNullable<Json>;
+          conversation_id?: string | null;
           created_at?: string;
           error?: string | null;
           id?: string;
@@ -56,6 +59,7 @@ export type Database = {
           output_tokens?: number | null;
           provider: string;
           question: string;
+          search_query?: string | null;
           status: Database["public"]["Enums"]["ai_query_status"];
           user_id?: string | null;
         };
@@ -63,6 +67,7 @@ export type Database = {
           answer?: string | null;
           chunk_ids?: number[];
           citations?: NonNullable<Json>;
+          conversation_id?: string | null;
           created_at?: string;
           error?: string | null;
           id?: string;
@@ -73,10 +78,18 @@ export type Database = {
           output_tokens?: number | null;
           provider?: string;
           question?: string;
+          search_query?: string | null;
           status?: Database["public"]["Enums"]["ai_query_status"];
           user_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "ai_queries_conversation_id_fkey";
+            columns: ["conversation_id"];
+            isOneToOne: false;
+            referencedRelation: "conversations";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "ai_queries_organisation_id_fkey";
             columns: ["organisation_id"];
@@ -86,6 +99,59 @@ export type Database = {
           },
           {
             foreignKeyName: "ai_queries_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      answer_feedback: {
+        Row: {
+          comment: string | null;
+          created_at: string;
+          organisation_id: string;
+          query_id: string;
+          rating: Database["public"]["Enums"]["feedback_rating"];
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          comment?: string | null;
+          created_at?: string;
+          organisation_id?: string;
+          query_id: string;
+          rating: Database["public"]["Enums"]["feedback_rating"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Update: {
+          comment?: string | null;
+          created_at?: string;
+          organisation_id?: string;
+          query_id?: string;
+          rating?: Database["public"]["Enums"]["feedback_rating"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "answer_feedback_organisation_id_fkey";
+            columns: ["organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "organisations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "answer_feedback_query_id_fkey";
+            columns: ["query_id"];
+            isOneToOne: true;
+            referencedRelation: "ai_queries";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "answer_feedback_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
@@ -161,6 +227,49 @@ export type Database = {
             columns: ["organisation_id"];
             isOneToOne: false;
             referencedRelation: "organisations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      conversations: {
+        Row: {
+          created_at: string;
+          id: string;
+          organisation_id: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          organisation_id: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          organisation_id?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "conversations_organisation_id_fkey";
+            columns: ["organisation_id"];
+            isOneToOne: false;
+            referencedRelation: "organisations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "conversations_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
             referencedColumns: ["id"];
           },
         ];
@@ -601,10 +710,11 @@ export type Database = {
       };
     };
     Enums: {
-      ai_query_status: "answered" | "no_answer" | "failed";
+      ai_query_status: "answered" | "no_answer" | "failed" | "needs_clarification";
       app_role: "admin" | "knowledge_manager" | "employee";
       document_status: "uploaded" | "processing" | "indexed" | "failed";
       document_visibility: "organisation" | "departments";
+      feedback_rating: "helpful" | "not_helpful";
       invitation_status: "pending" | "accepted" | "revoked";
     };
     CompositeTypes: {
@@ -724,10 +834,11 @@ export const Constants = {
   },
   public: {
     Enums: {
-      ai_query_status: ["answered", "no_answer", "failed"],
+      ai_query_status: ["answered", "no_answer", "failed", "needs_clarification"],
       app_role: ["admin", "knowledge_manager", "employee"],
       document_status: ["uploaded", "processing", "indexed", "failed"],
       document_visibility: ["organisation", "departments"],
+      feedback_rating: ["helpful", "not_helpful"],
       invitation_status: ["pending", "accepted", "revoked"],
     },
   },

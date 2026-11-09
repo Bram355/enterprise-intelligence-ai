@@ -28,7 +28,7 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <DashboardPage /> },
-      { path: 'assistant', element: <AssistantPage /> },
+      { path: 'assistant/:conversationId?', element: <AssistantPage /> },
       { path: 'library', element: <LibraryPage /> },
       {
         path: 'library/upload',
