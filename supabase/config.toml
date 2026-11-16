@@ -432,3 +432,6 @@ verify_jwt = true
 
 [functions.reindex-embeddings]
 verify_jwt = true
+
+[functions.troubleshoot]
+verify_jwt = true

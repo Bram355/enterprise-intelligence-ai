@@ -34,4 +34,14 @@ describe('Ollama adapter', () => {
     const down = createOllamaProvider({ ...options, fetchImpl: vi.fn(async () => { throw new Error('ECONNREFUSED') }) })
     await expect(down.embed(['a'], 'document')).rejects.toBeInstanceOf(AiProviderError)
   })
+
+  it('caps answer length when asked and reports timeouts separately', async () => {
+    const fetchImpl = vi.fn(async () => reply({ message: { content: 'ok' } }))
+    await createOllamaProvider({ ...options, fetchImpl }).generate([], { maxTokens: 400 })
+    const body = JSON.parse((fetchImpl.mock.calls[0] as unknown as [string, RequestInit])[1].body as string)
+    expect(body.options).toEqual({ temperature: 0.1, num_predict: 400 })
+    const slow = createOllamaProvider({ ...options, fetchImpl: vi.fn(async () => { throw new DOMException('timed out', 'TimeoutError') }) })
+    await expect(slow.generate([])).rejects.toThrow('took too long')
+  })
 })
+
