@@ -49,6 +49,8 @@ begin
 end
 $$;
 
+-- Supabase creates the auth user (and so the profile) when the invitation email is sent, so revoking
+-- must also remove that account while it is still unconfirmed, or the emailed link would keep working.
 create function public.admin_revoke_invitation(p_invitation uuid)
 returns void
 language plpgsql security definer set search_path = ''
@@ -56,6 +58,7 @@ as $$
 declare
   v_org uuid := private.current_org_id();
   v_email text;
+  v_removed integer;
 begin
   if v_org is null or not private.is_org_admin(v_org) then
     raise exception 'Only organisation admins can revoke invitations' using errcode = '42501';
@@ -66,7 +69,12 @@ begin
   if v_email is null then
     raise exception 'Pending invitation not found' using errcode = 'P0002';
   end if;
-  perform private.write_audit(v_org, 'invitation.revoked', 'invitation', p_invitation::text, jsonb_build_object('email', v_email));
+  delete from auth.users u
+    where lower(u.email) = v_email and u.email_confirmed_at is null and u.last_sign_in_at is null
+      and exists (select 1 from public.profiles p where p.id = u.id and p.organisation_id = v_org);
+  get diagnostics v_removed = row_count;
+  perform private.write_audit(v_org, 'invitation.revoked', 'invitation', p_invitation::text,
+    jsonb_build_object('email', v_email, 'pending_account_removed', v_removed > 0));
 end
 $$;
 

@@ -86,7 +86,7 @@ export function AdminPage() {
             ) : invitations.length === 0 ? (
               <p className="text-sm text-slate-500">No invitations yet.</p>
             ) : (
-              <div className="-mx-5 overflow-x-auto">
+              <div className="relative -mx-5 overflow-x-auto">
                 <table className="min-w-full text-left text-sm">
                   <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
                     <tr>

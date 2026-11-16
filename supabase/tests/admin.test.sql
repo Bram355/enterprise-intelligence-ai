@@ -1,6 +1,6 @@
 -- Phase 7 administration and analytics tests. Run with: npm run test:db
 begin;
-select plan(17);
+select plan(19);
 
 create or replace function pg_temp.login(p_user uuid) returns void language plpgsql as $$
 begin
@@ -18,6 +18,9 @@ end $$;
 -- Departments: northwind support b001, finance b004; contoso b005.
 insert into public.invitations (id, organisation_id, email, role) values
   ('70000000-0000-4000-f000-000000000001', '00000000-0000-4000-a000-000000000001', 'new.starter@northwind.test', 'employee');
+-- Sending an invitation creates an unconfirmed auth user (and profile) straight away.
+insert into auth.users (id, email, aud, role) values
+  ('70000000-0000-4000-c000-000000000009', 'new.starter@northwind.test', 'authenticated', 'authenticated');
 
 select pg_temp.login('00000000-0000-4000-c000-000000000001');
 select lives_ok($$ select public.admin_update_member('00000000-0000-4000-c000-000000000004', 'knowledge_manager', '00000000-0000-4000-b000-000000000004', true) $$,
@@ -35,8 +38,16 @@ select throws_ok($$ select public.admin_update_member('00000000-0000-4000-c000-0
 select lives_ok($$ select public.admin_revoke_invitation('70000000-0000-4000-f000-000000000001') $$, 'admins can revoke a pending invitation');
 select throws_ok($$ select public.admin_revoke_invitation('70000000-0000-4000-f000-000000000001') $$,
   'P0002', 'Pending invitation not found', 'an invitation can only be revoked once');
+select pg_temp.logout();
+select ok(not exists (select 1 from auth.users where email = 'new.starter@northwind.test'),
+  'revoking removes the unconfirmed account so the emailed link stops working');
+select ok(not exists (select 1 from public.profiles where email = 'new.starter@northwind.test'),
+  'revoking removes the pending profile');
+select pg_temp.login('00000000-0000-4000-c000-000000000001');
 select ok((select public.org_analytics(30) ? 'questions'), 'admins can read analytics');
-select is((select (public.org_analytics(30) -> 'users' ->> 'total')::int), 4, 'analytics count only the admin''s organisation');
+select is((select (public.org_analytics(30) -> 'users' ->> 'total')::int),
+  (select count(*)::int from public.profiles where organisation_id = '00000000-0000-4000-a000-000000000001'),
+  'analytics count only the admin''s organisation');
 select pg_temp.logout();
 
 select results_eq($$ select role::text, is_active from public.profiles where id = '00000000-0000-4000-c000-000000000004' $$,
