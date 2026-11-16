@@ -33,7 +33,7 @@ Supabase
 | `departments` | Teams inside an organisation | Members of that organisation | Organisation admins |
 | `profiles` | One per user: organisation, role, department, active flag | Members of the same organisation | The user, own `full_name` only |
 | `invitations` | Pending/accepted invites | Organisation admins | Nobody (Edge Function only) |
-| `audit_log` | Security-relevant events | Organisation admins | Nobody (triggers/Edge Function only) |
+| `audit_log` | Security-relevant events | Organisation admins | Nobody (triggers, Edge Functions and admin database functions only) |
 
 Invitation flow: admin submits the form → `invite-member` Edge Function (checks admin, validates, rate-limits, writes invitation + audit entry) → Supabase Auth sends the email → database trigger creates the profile from the invitation → user sets a password on `/accept-invite` → invitation marked accepted.
 
@@ -97,6 +97,19 @@ Support page (/support/:caseId?)
 ```
 
 `support_cases` belong to one user; organisation admins can read their organisation's cases. Browsers can't insert or delete cases or edit the diagnosis (column-level grants plus RLS). Setting a case to resolved/escalated stamps `closed_at`; changing a step outcome touches the case's `updated_at`.
+
+Administration and analytics (Phase 7):
+
+```
+Admin page → rpc admin_update_member / admin_revoke_invitation (security definer: caller must be an
+             active admin of the same organisation; no self-demotion/deactivation; keeps ≥1 active admin)
+           → departments insert/update/delete directly, under the existing admin RLS policy
+           → audit_log select (admin RLS), actor names looked up from profiles
+Dashboard  → rpc org_analytics(days) (security definer, admin-only, every query filtered by the
+             caller's organisation) → aggregated figures only
+```
+
+Browsers still have no write grant on `profiles.role`, `department_id` or `is_active`; the functions are the only path and the existing profile trigger audits each change. Support case creation and status changes are audited by a trigger (`support_case.created`, `.resolved`, `.escalated`, `.open`). `answer_feedback.reason` (`incorrect`, `missing_docs`, `other`) is only allowed on "not helpful" ratings. Security tests: `supabase/tests/admin.test.sql`; live checks: `npm run eval:admin`.
 
 ## Frontend layout
 

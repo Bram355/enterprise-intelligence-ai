@@ -14,24 +14,27 @@ import {
   getConversationMessages,
   listConversations,
   MAX_QUESTION_CHARS,
+  FEEDBACK_REASONS,
   submitFeedback,
   type ConversationSummary,
   type FeedbackRating,
+  type FeedbackReason,
   type Message,
 } from '../../services/assistant'
 
 function FeedbackBar({ message, onSaved }: { message: Message; onSaved: (m: Message) => void }) {
   const [rating, setRating] = useState<FeedbackRating | null>(message.feedback?.rating ?? null)
   const [comment, setComment] = useState(message.feedback?.comment ?? '')
+  const [reason, setReason] = useState<FeedbackReason | null>(message.feedback?.reason ?? null)
   const [askComment, setAskComment] = useState(false)
   const [state, setState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
 
-  async function save(next: FeedbackRating, text?: string) {
+  async function save(next: FeedbackRating, text?: string, why: FeedbackReason | null = null) {
     setRating(next)
     setState('saving')
-    const result = await submitFeedback(message.id, next, text)
+    const result = await submitFeedback(message.id, next, text, why)
     setState(result.ok ? 'saved' : 'error')
-    if (result.ok) onSaved({ ...message, feedback: { rating: next, comment: text?.trim() || null } })
+    if (result.ok) onSaved({ ...message, feedback: { rating: next, comment: text?.trim() || null, reason: next === 'not_helpful' ? why : null } })
   }
 
   return (
@@ -56,7 +59,7 @@ function FeedbackBar({ message, onSaved }: { message: Message; onSaved: (m: Mess
           aria-pressed={rating === 'not_helpful'}
           onClick={() => {
             setAskComment(true)
-            void save('not_helpful', comment)
+            void save('not_helpful', comment, reason)
           }}
           className={`rounded p-1 hover:bg-slate-100 ${rating === 'not_helpful' ? 'text-red-700' : ''}`}
         >
@@ -67,13 +70,27 @@ function FeedbackBar({ message, onSaved }: { message: Message; onSaved: (m: Mess
       </div>
       {askComment && rating === 'not_helpful' && (
         <form
-          className="mt-2 flex flex-col gap-2 sm:flex-row"
+          className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap"
           onSubmit={(e) => {
             e.preventDefault()
-            void save('not_helpful', comment)
+            void save('not_helpful', comment, reason)
             setAskComment(false)
           }}
         >
+          <fieldset className="flex w-full flex-wrap items-center gap-2">
+            <legend className="sr-only">Why wasn't it helpful?</legend>
+            {FEEDBACK_REASONS.map((r) => (
+              <button
+                key={r.value}
+                type="button"
+                aria-pressed={reason === r.value}
+                onClick={() => setReason(reason === r.value ? null : r.value)}
+                className={`rounded-full px-2.5 py-1 ring-1 ring-inset ${reason === r.value ? 'bg-red-50 text-red-800 ring-red-300' : 'ring-slate-300 hover:bg-slate-50'}`}
+              >
+                {r.label}
+              </button>
+            ))}
+          </fieldset>
           <label htmlFor={`comment-${message.id}`} className="sr-only">
             What was wrong?
           </label>

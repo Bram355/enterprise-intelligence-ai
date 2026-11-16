@@ -3,16 +3,20 @@ import { Alert } from '../../components/ui/Alert'
 import { Badge, type BadgeTone } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
 import { PageHeader } from '../../components/ui/PageHeader'
-import { PlannedFeature } from '../../components/ui/PlannedFeature'
-import { listDepartments, listInvitations, listMembers, type Member } from '../../services/members'
+import { listDepartments, listInvitations, listMembers, revokeInvitation, type Member } from '../../services/members'
 import { ROLE_LABELS, type Department, type Invitation, type InvitationStatus } from '../../types/domain'
+import { useAuth } from '../auth/auth-context'
+import { AuditLogCard } from './AuditLogCard'
+import { DepartmentsCard } from './DepartmentsCard'
 import { InviteMemberForm } from './InviteMemberForm'
+import { MembersCard } from './MembersCard'
 
 const STATUS_TONE: Record<InvitationStatus, BadgeTone> = { pending: 'warning', accepted: 'success', revoked: 'neutral' }
 
 const formatDate = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
 export function AdminPage() {
+  const { profile } = useAuth()
   const [members, setMembers] = useState<Member[]>([])
   const [departments, setDepartments] = useState<Department[]>([])
   const [invitations, setInvitations] = useState<Invitation[]>([])
@@ -43,59 +47,39 @@ export function AdminPage() {
   }, [version])
 
   const pendingEmails = new Set(invitations.filter((i) => i.status === 'pending').map((i) => i.email))
+  const refresh = () => setVersion((v) => v + 1)
+
+  async function revoke(invitation: Invitation) {
+    if (!window.confirm(`Cancel the invitation for ${invitation.email}? Their sign-up link will stop working.`)) return
+    const result = await revokeInvitation(invitation.id)
+    if (!result.ok) return setError(result.error)
+    refresh()
+  }
 
   return (
     <>
-      <PageHeader title="Administration" description="Invite people and review who has access to your organisation." />
+      <PageHeader title="Administration" description="Manage who has access to your organisation, and review what happened." />
       {error && (
         <div className="mb-4">
           <Alert tone="error">{error}</Alert>
         </div>
       )}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card title="Invite a member" className="min-w-0 self-start">
-          <InviteMemberForm departments={departments} onInvited={() => setVersion((v) => v + 1)} />
-        </Card>
-        <div className="min-w-0 space-y-6 lg:col-span-2">
-          <Card title={`Members${loading ? '' : ` (${members.length})`}`}>
-            {loading ? (
-              <p className="text-sm text-slate-500">Loading…</p>
-            ) : (
-              <div className="-mx-5 overflow-x-auto">
-                <table className="min-w-full text-left text-sm">
-                  <thead className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th scope="col" className="px-5 py-2 font-medium">Name</th>
-                      <th scope="col" className="px-5 py-2 font-medium">Role</th>
-                      <th scope="col" className="px-5 py-2 font-medium">Department</th>
-                      <th scope="col" className="px-5 py-2 font-medium">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {members.map((m) => (
-                      <tr key={m.id}>
-                        <td className="px-5 py-2">
-                          <div className="font-medium text-slate-900">{m.fullName || '—'}</div>
-                          <div className="text-xs text-slate-500">{m.email}</div>
-                        </td>
-                        <td className="whitespace-nowrap px-5 py-2 text-slate-700">{ROLE_LABELS[m.role]}</td>
-                        <td className="whitespace-nowrap px-5 py-2 text-slate-700">{m.departmentName ?? '—'}</td>
-                        <td className="px-5 py-2">
-                          {!m.isActive ? (
-                            <Badge tone="neutral">Deactivated</Badge>
-                          ) : pendingEmails.has(m.email) ? (
-                            <Badge tone="warning">Invited</Badge>
-                          ) : (
-                            <Badge tone="success">Active</Badge>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+        <div className="min-w-0 space-y-6 self-start">
+          <Card title="Invite a member" className="min-w-0">
+            <InviteMemberForm departments={departments} onInvited={refresh} />
           </Card>
+          <DepartmentsCard departments={departments} members={members} organisationId={profile?.organisationId} onChanged={refresh} />
+        </div>
+        <div className="min-w-0 space-y-6 lg:col-span-2">
+          <MembersCard
+            members={members}
+            departments={departments}
+            pendingEmails={pendingEmails}
+            currentUserId={profile?.id}
+            loading={loading}
+            onChanged={refresh}
+          />
           <Card title="Invitations">
             {loading ? (
               <p className="text-sm text-slate-500">Loading…</p>
@@ -110,6 +94,7 @@ export function AdminPage() {
                       <th scope="col" className="px-5 py-2 font-medium">Role</th>
                       <th scope="col" className="px-5 py-2 font-medium">Status</th>
                       <th scope="col" className="px-5 py-2 font-medium">Sent</th>
+                      <th scope="col" className="px-5 py-2 font-medium"><span className="sr-only">Actions</span></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -121,6 +106,18 @@ export function AdminPage() {
                           <Badge tone={STATUS_TONE[i.status]}>{i.status}</Badge>
                         </td>
                         <td className="whitespace-nowrap px-5 py-2 text-slate-700">{formatDate(i.createdAt)}</td>
+                        <td className="whitespace-nowrap px-5 py-2 text-right">
+                          {i.status === 'pending' && (
+                            <button
+                              type="button"
+                              aria-label={`Cancel invitation for ${i.email}`}
+                              className="text-xs text-red-700 hover:underline"
+                              onClick={() => void revoke(i)}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -128,11 +125,7 @@ export function AdminPage() {
               </div>
             )}
           </Card>
-          <PlannedFeature
-            phase={7}
-            summary="Further administration tools arrive in Phase 7."
-            capabilities={['Change roles and departments', 'Deactivate members', 'Resend or revoke invitations', 'Manage departments', 'Audit log viewer', 'Feedback review']}
-          />
+          <AuditLogCard refreshKey={version} />
         </div>
       </div>
     </>

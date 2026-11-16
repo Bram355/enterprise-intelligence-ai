@@ -13,8 +13,9 @@ Organisation-wide AI knowledge platform: upload internal documents, then ask an 
 | 3 | Knowledge library: upload, processing, versions, archiving, keyword search, document permissions | Done |
 | 4 | AI retrieval: embeddings (pgvector), permission-aware hybrid search, provider adapter (mock, Ollama, OpenAI), answers with citations | Done |
 | 5 | AI assistant: saved conversations, follow-up questions, clarifying questions, helpful/not helpful feedback, section references | Done |
-| 6 | Technical support: structured troubleshooting with cited causes and steps, step outcomes, escalation handoff, saved support cases | In review |
-| 7–9 | Admin and analytics, QA and security review, deployment prep | Planned |
+| 6 | Technical support: structured troubleshooting with cited causes and steps, step outcomes, escalation handoff, saved support cases | Done |
+| 7 | Administration and analytics: member roles/departments/deactivation, invitation revocation, departments, audit log viewer, organisation analytics, feedback reasons | In review |
+| 8–9 | QA and security review, deployment prep | Planned |
 
 ## Prerequisites
 
@@ -94,6 +95,12 @@ npm run eval:support
 
 On a CPU-only machine a diagnosis with `qwen2.5:7b` can take 1–2 minutes; the Ollama request timeout is 120 s (`AI_TIMEOUT_MS`; keep it under the 150 s Edge Function limit) and diagnoses are capped at 400 tokens.
 
+Administration and analytics (Phase 7): admins see organisation analytics on the **Dashboard** for the last 7, 30 or 90 days: questions per day, answered vs "couldn't find", the most common unanswered questions (documentation gaps), helpful rate and recent "not helpful" feedback with its reason, most cited documents, support cases by status and category, active users, and document health with failed documents and their errors. Every figure comes from the `org_analytics` database function, which only answers organisation admins and only for their own organisation. Other users see shortcuts instead. On **Administration**, admins can change a member's role or department, deactivate or reactivate them, cancel pending invitations, add/rename/delete departments, and browse the audit log with filters. Member changes go through the `admin_update_member` database function: admins can't demote or deactivate themselves, and the last active admin can't be removed. "Not helpful" feedback now asks for a reason (wrong answer, missing documentation, other). Check the safeguards with:
+
+```bash
+npm run eval:admin
+```
+
 Keys belong only in server-side settings, never in `.env.local` or the browser. Optional for every provider: `AI_CHAT_MODEL`, `AI_EMBEDDING_MODEL`, `AI_MIN_SIMILARITY` (and `AI_TIMEOUT_MS` for Ollama).
 
 On Windows (PowerShell) use `Copy-Item .env.example .env.local` instead of `cp`.
@@ -112,6 +119,7 @@ On Windows (PowerShell) use `Copy-Item .env.example .env.local` instead of `cp`.
 | `npm run test:db` | Database security tests (pgTAP, needs local Supabase running) |
 | `npm run seed:documents` | Upload the synthetic sample documents through the real upload function (local only) |
 | `npm run eval:questions` | Ask sample questions as different demo users and check citations and permissions (local only) |
+| `npm run eval:admin` | Check analytics scoping, member-management safeguards and feedback reasons as different demo users (local only; reverts its changes) |
 | `npm run eval:support` | Run sample technical problems through `troubleshoot` and check citations, permissions and support-case privacy (local only) |
 | `npm run db:types` | Regenerate `src/types/database.ts` from the local database |
 | `npm run db:start` / `db:stop` / `db:status` / `db:reset` | Manage the local Supabase stack |

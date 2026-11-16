@@ -115,18 +115,19 @@ describe('AssistantPage', () => {
     expect(screen.queryByText('Sources')).not.toBeInTheDocument()
   })
 
-  it('saves helpful and not helpful feedback with an optional comment', async () => {
+  it('saves helpful and not helpful feedback with a reason and optional comment', async () => {
     askQuestion.mockResolvedValue({ ok: true, value: { ...base, status: 'answered', answer: 'Rotate the secret [1].', citations: [citation] } })
     renderPage()
     await userEvent.type(screen.getByLabelText('Your question'), 'Webhook errors?')
     await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
     await userEvent.click(await screen.findByRole('button', { name: 'Helpful' }))
-    expect(submitFeedback).toHaveBeenCalledWith('q1', 'helpful', undefined)
+    expect(submitFeedback).toHaveBeenCalledWith('q1', 'helpful', undefined, null)
     expect(await screen.findByText('Thanks for the feedback.')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'Not helpful' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Missing documentation' }))
     await userEvent.type(screen.getByPlaceholderText(/What was wrong/), 'Missing step')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-    expect(submitFeedback).toHaveBeenLastCalledWith('q1', 'not_helpful', 'Missing step')
+    expect(submitFeedback).toHaveBeenLastCalledWith('q1', 'not_helpful', 'Missing step', 'missing_docs')
   })
 
   it('deletes a conversation after confirmation', async () => {
