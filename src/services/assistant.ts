@@ -5,6 +5,13 @@ export const MAX_QUESTION_CHARS = 1000
 
 export type AnswerStatus = 'answered' | 'no_answer' | 'needs_clarification' | 'failed'
 export type FeedbackRating = 'helpful' | 'not_helpful'
+export type FeedbackReason = 'incorrect' | 'missing_docs' | 'other'
+
+export const FEEDBACK_REASONS: { value: FeedbackReason; label: string }[] = [
+  { value: 'incorrect', label: 'Wrong answer' },
+  { value: 'missing_docs', label: 'Missing documentation' },
+  { value: 'other', label: 'Other' },
+]
 
 export interface Citation {
   n: number
@@ -43,7 +50,7 @@ export interface Message {
   provider: string
   model: string
   sourcesConsidered?: number
-  feedback: { rating: FeedbackRating; comment: string | null } | null
+  feedback: { rating: FeedbackRating; comment: string | null; reason: FeedbackReason | null } | null
 }
 
 type Result<T> = { ok: true; value: T } | { ok: false; error: string }
@@ -68,7 +75,7 @@ export async function listConversations(): Promise<Result<ConversationSummary[]>
 export async function getConversationMessages(conversationId: string): Promise<Result<Message[]>> {
   const { data, error } = await requireSupabase()
     .from('ai_queries')
-    .select('id, question, answer, status, citations, provider, model, answer_feedback(rating, comment)')
+    .select('id, question, answer, status, citations, provider, model, answer_feedback(rating, comment, reason)')
     .eq('conversation_id', conversationId)
     .order('created_at', { ascending: true })
   if (error) return { ok: false, error: 'Could not load this conversation.' }
@@ -84,7 +91,9 @@ export async function getConversationMessages(conversationId: string): Promise<R
         citations: Array.isArray(row.citations) ? (row.citations as unknown as Citation[]) : [],
         provider: row.provider,
         model: row.model,
-        feedback: feedback ? { rating: feedback.rating, comment: feedback.comment } : null,
+        feedback: feedback
+          ? { rating: feedback.rating, comment: feedback.comment, reason: (feedback.reason as FeedbackReason | null) ?? null }
+          : null,
       }
     }),
   }
@@ -96,9 +105,14 @@ export async function deleteConversation(conversationId: string): Promise<Result
   return { ok: true, value: null }
 }
 
-export async function submitFeedback(queryId: string, rating: FeedbackRating, comment?: string): Promise<Result<null>> {
+export async function submitFeedback(
+  queryId: string,
+  rating: FeedbackRating,
+  comment?: string,
+  reason?: FeedbackReason | null,
+): Promise<Result<null>> {
   const supabase = requireSupabase()
-  const values = { rating, comment: comment?.trim() || null }
+  const values = { rating, comment: comment?.trim() || null, reason: rating === 'not_helpful' ? (reason ?? null) : null }
   const { error } = await supabase.from('answer_feedback').insert({ query_id: queryId, ...values })
   if (!error) return { ok: true, value: null }
   if (error.code !== '23505') return { ok: false, error: 'Could not save your feedback.' }

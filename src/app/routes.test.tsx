@@ -43,9 +43,10 @@ describe('app routes (signed in)', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Knowledge Library' })).toBeInTheDocument()
   })
 
-  it('labels unbuilt features honestly', async () => {
+  it('shows employees shortcuts instead of organisation analytics', async () => {
     renderAt('/')
-    expect((await screen.findAllByText('Planned for Phase 7')).length).toBeGreaterThan(0)
+    expect(await screen.findByText('Ask the AI Assistant')).toBeInTheDocument()
+    expect(screen.queryByText('Organisation analytics')).not.toBeInTheDocument()
   })
 
   it('shows the signed-in user and role', async () => {

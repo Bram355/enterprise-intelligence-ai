@@ -20,7 +20,8 @@
     "db:types": "supabase gen types typescript --local > src/types/database.ts && npx oxfmt src/types/database.ts",
     "seed:documents": "node scripts/seed-documents.mjs",
     "eval:questions": "node scripts/eval-questions.mjs",
-    "eval:support": "node scripts/eval-support.mjs"
+    "eval:support": "node scripts/eval-support.mjs",
+    "eval:admin": "node scripts/eval-admin.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

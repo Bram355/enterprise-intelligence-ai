@@ -113,6 +113,7 @@ export type Database = {
           organisation_id: string;
           query_id: string;
           rating: Database["public"]["Enums"]["feedback_rating"];
+          reason: string | null;
           updated_at: string;
           user_id: string;
         };
@@ -123,6 +124,7 @@ export type Database = {
           organisation_id?: string;
           query_id: string;
           rating: Database["public"]["Enums"]["feedback_rating"];
+          reason?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -132,6 +134,7 @@ export type Database = {
           organisation_id?: string;
           query_id?: string;
           rating?: Database["public"]["Enums"]["feedback_rating"];
+          reason?: string | null;
           updated_at?: string;
           user_id?: string;
         };
@@ -808,6 +811,16 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      admin_revoke_invitation: { Args: { p_invitation: string }; Returns: undefined };
+      admin_update_member: {
+        Args: {
+          p_department_id: string;
+          p_is_active: boolean;
+          p_member: string;
+          p_role: Database["public"]["Enums"]["app_role"];
+        };
+        Returns: undefined;
+      };
       match_chunks: {
         Args: {
           match_count?: number;
@@ -828,6 +841,7 @@ export type Database = {
           version: number;
         }[];
       };
+      org_analytics: { Args: { p_days?: number }; Returns: Json };
       search_documents: {
         Args: { max_results?: number; search_query: string };
         Returns: {
